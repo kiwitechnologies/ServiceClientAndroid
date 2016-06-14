@@ -12,9 +12,36 @@
       "qa_url": "http://172.16.144.218:4000/",
       "staging_url": "http://172.16.144.218:4000/",
       "production_url": "http://172.16.144.218:4000/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
       "body_parameters": [],
       "query_parameters": [],
-      "headers": []
+      "headers": [],
+      "params_parameters": 0
+    },
+    {
+      "action": "users/{user-id}/media/recent/",
+      "action_id": "5759249a62c18b953cf00e7f",
+      "request_type": "GET",
+      "dev_url": "https://api.instagram.com/",
+      "qa_url": "https://api.instagram.com/",
+      "staging_url": "https://api.instagram.com/",
+      "production_url": "https://api.instagram.com/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
+      "body_parameters": [],
+      "query_parameters": [
+        {
+          "key_name": "access_token",
+          "validation_data_type": 2,
+          "validations": {
+            "max": "0",
+            "min": "0",
+            "format_string": -1,
+            "require": 0
+          }
+        }
+      ],
+      "headers": [],
+      "params_parameters": 1
     },
     {
       "action": "projects/create_project",
@@ -24,6 +51,7 @@
       "qa_url": "http://172.16.144.218:4000/",
       "staging_url": "http://172.16.144.218:4000/",
       "production_url": "http://172.16.144.218:4000/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
       "body_parameters": [
         {
           "key_name": "user_email",
@@ -47,7 +75,8 @@
         }
       ],
       "query_parameters": [],
-      "headers": []
+      "headers": [],
+      "params_parameters": 0
     },
     {
       "action": "projects/update_project",
@@ -58,6 +87,7 @@
       "qa_url": "http://172.16.144.218:4000/",
       "staging_url": "http://172.16.144.218:4000/",
       "production_url": "http://172.16.144.218:4000/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
       "body_parameters": [
         {
           "key_name": "project_id",
@@ -101,7 +131,8 @@
         }
       ],
       "query_parameters": [],
-      "headers": []
+      "headers": [],
+      "params_parameters": 0
     },
     {
       "action": "projects/delete_project",
@@ -112,6 +143,7 @@
       "qa_url": "http://172.16.144.218:4000/",
       "staging_url": "http://172.16.144.218:4000/",
       "production_url": "http://172.16.144.218:4000/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
       "body_parameters": [
         {
           "key_name": "project_id",
@@ -125,7 +157,8 @@
         }
       ],
       "query_parameters": [],
-      "headers": []
+      "headers": [],
+      "params_parameters": 0
     },
     {
       "action": "projects/image_upload",
@@ -136,6 +169,7 @@
       "qa_url": "http://172.16.144.218:4000/",
       "staging_url": "http://172.16.144.218:4000/",
       "production_url": "http://172.16.144.218:4000/",
+      "dummy_server_url": "http://www.kiwitechopensource.com/tsg/dummy_server/5759249a62c18b953cf00e7f/response",
       "body_parameters": [
         {
           "key_name": "name",
@@ -179,7 +213,8 @@
         }
       ],
       "query_parameters": [],
-      "headers": []
+      "headers": [],
+      "params_parameters": 0
     }
   ]
 }

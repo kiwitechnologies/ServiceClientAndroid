@@ -10,4 +10,5 @@ public interface Constants {
     String API_UPDATE_PROJECT = "5742a28c5262ef7a1aae2977";
     String API_DELETE_PROJECT = "5742a2b95262ef7a1aae297d";
     String API_IMAGE_UPLOAD = "5742a30b5262ef7a1aae2980";
+    String API_PATH_PARAM_REQUEST = "5759249a62c18b953cf00e7f";
 }

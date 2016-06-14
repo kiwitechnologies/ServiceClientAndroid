@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 
-import httputility.tsg.com.tsgapicontroller.TSGHttpUtility;
+import httputility.tsg.com.tsgapicontroller.TSGServiceManager;
 
 /**
  * Created by kiwitech on 12/05/16.
@@ -20,6 +20,7 @@ public final class TSGErrorManager {
     private TSGErrorHelper err_queryParameters = new TSGErrorHelper();
     private TSGErrorHelper err_headers = new TSGErrorHelper();
     private TSGErrorHelper err_bodyParameters = new TSGErrorHelper();
+    private TSGErrorHelper err_urlPathParameters = new TSGErrorHelper();
 
     public ArrayList<String> getErr_mix() {
         return err_mix;
@@ -61,11 +62,19 @@ public final class TSGErrorManager {
         this.err_queryParameters = err_queryParameters;
     }
 
+    public TSGErrorHelper getErr_urlPathParameters() {
+        return err_urlPathParameters;
+    }
+
+    public void setErr_urlPathParameters(TSGErrorHelper err_urlPathParameters) {
+        this.err_urlPathParameters = err_urlPathParameters;
+    }
+
     public static String getLog() {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             StringWriter stringEmp = new StringWriter();
-            objectMapper.writeValue(stringEmp, TSGHttpUtility.ERROR_LOGGER);
+            objectMapper.writeValue(stringEmp, TSGServiceManager.ERROR_LOGGER);
             return stringEmp.toString();
         } catch (IOException e) {
             return null;

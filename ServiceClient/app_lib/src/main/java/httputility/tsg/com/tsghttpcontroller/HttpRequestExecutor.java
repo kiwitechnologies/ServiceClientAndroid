@@ -11,10 +11,7 @@
 package httputility.tsg.com.tsghttpcontroller;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +39,9 @@ public final class HttpRequestExecutor {
 
     private static ConcurrentHashMap<String, ArrayList<CallWrapper>> requestInfo = new ConcurrentHashMap<>();
 
-    public Response execute(HttpUtils httpUtils) throws IOException {
+    public Response execute(ServiceManager serviceManager) throws IOException {
         Response response = null;
-        Request request = HttpRequestFactory.getRequest(httpUtils, null);
+        Request request = HttpRequestFactory.getRequest(serviceManager, null);
         response = httpClient.newCall(request).execute();
         if (!response.isSuccessful()) {
             throw new IOException("Unexpected code " + response);
@@ -52,21 +49,21 @@ public final class HttpRequestExecutor {
         return response;
     }
 
-    public void enqueRequest(HttpUtils httpUtils, HttpUtils.RequestCallBack requestCallBack) {
+    public void enqueRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
         Request request = null;
 
         try {
-            request = HttpRequestFactory.getRequest(httpUtils, requestCallBack);
+            request = HttpRequestFactory.getRequest(serviceManager, requestCallBack);
         } catch (Exception e) {
-            requestCallBack.onFailure(httpUtils.getRequestId(), e, null);
-            requestCallBack.onFinish(httpUtils.getRequestId());
+            requestCallBack.onFailure(serviceManager.getRequestId(), e, null);
+            requestCallBack.onFinish(serviceManager.getRequestId());
             return;
         }
 
-        HttpRequestCallBack httpRequestCallBack = new HttpRequestCallBack(httpUtils, requestCallBack);
+        HttpRequestCallBack httpRequestCallBack = new HttpRequestCallBack(serviceManager, requestCallBack);
         Call call = httpClient.newCall(request);
-        if (httpUtils.getRequestId() != null && !httpUtils.getRequestId().equals("")) {
-            addCallInMap(httpUtils.getRequestId(), new CallWrapper(httpUtils.getRequestTime(), call));
+        if (serviceManager.getRequestId() != null && !serviceManager.getRequestId().equals("")) {
+            addCallInMap(serviceManager.getRequestId(), new CallWrapper(serviceManager.getRequestTime(), call));
         }
         call.enqueue(httpRequestCallBack);
     }

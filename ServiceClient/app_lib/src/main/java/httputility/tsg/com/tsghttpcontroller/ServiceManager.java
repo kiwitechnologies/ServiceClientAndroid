@@ -13,7 +13,6 @@ package httputility.tsg.com.tsghttpcontroller;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
 
 import java.io.File;
@@ -23,31 +22,32 @@ import java.util.HashSet;
 
 import okhttp3.Response;
 
-public final class HttpUtils {
+public final class ServiceManager {
 
     private static String BASE_URL;
     private static HttpRequestExecutor httpRequestExecutor = new HttpRequestExecutor();
-//    private final String tag;
+    private final HashMap<String, String> path_parameter;
 
     private HttpConstants.HTTPRequestType HTTPRequestType;
     private String requestId;
     private String subURL = "";
     private String downloadFilePath;
     private HashMap<String, String> headers;
-    private HashMap<String, String> body_params;
+    private RequestBodyParams body_params;
     private HashMap<String, String> query_params;
     private HashSet<String> multipartKeyNamesSet;
     private HttpConstants.IMAGE_QUALITY image_quality;
     private long requestTime;
 
-    private HttpUtils(@NonNull HttpConstants.HTTPRequestType httpRequestType, String requestId, @NonNull String subURL, HashMap<String, String> headers, HashMap<String, String> query_params, HashMap<String, String> body_params) {
-        this(httpRequestType, requestId, subURL, headers, query_params, body_params, null);
+    private ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params) {
+        this(httpRequestType, requestId, subURL, path_parameter, headers, query_params, body_params, null);
     }
 
-    public HttpUtils(@NonNull HttpConstants.HTTPRequestType httpRequestType, @Nullable String requestId, @NonNull String subURL, HashMap<String, String> headers, HashMap<String, String> query_params, HashMap<String, String> body_params, String downloadFilePath) {
+    public ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, @Nullable String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params, String downloadFilePath) {
         this.HTTPRequestType = httpRequestType;
         this.requestId = requestId;
         this.subURL = subURL;
+        this.path_parameter = path_parameter;
         this.headers = headers;
         this.query_params = query_params;
         this.body_params = body_params;
@@ -141,11 +141,15 @@ public final class HttpUtils {
         return multipartKeyNamesSet;
     }
 
+    public HashMap<String, String> getPath_parameter() {
+        return path_parameter;
+    }
+
     public HashMap<String, String> getHeaders() {
         return headers;
     }
 
-    public HashMap<String, String> getBody_params() {
+    public RequestBodyParams getBody_params() {
         return body_params;
     }
 
@@ -183,8 +187,9 @@ public final class HttpUtils {
 
         HashMap<String, String> headers;
         HashMap<String, String> queryParameters;
+        HashMap<String, String> pathParameters;
 
-        public abstract HttpUtils build();
+        public abstract ServiceManager build();
 
         public void setSubURL(String subURL) {
             this.subURL = subURL;
@@ -201,64 +206,68 @@ public final class HttpUtils {
         public void setQueryParameters(@Nullable HashMap<String, String> queryParameters) {
             this.queryParameters = queryParameters;
         }
+
+        public void setPathParameters(HashMap<String, String> path_params) {
+            this.pathParameters = path_params;
+        }
     }
 
     public static class GetRequestBuilder extends RequestBuilder {
 
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.GET, requestId, subURL, headers, queryParameters, null, null);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.GET, requestId, subURL, pathParameters, headers, queryParameters, null);
         }
     }
 
     public static class PostRequestBuilder extends RequestBuilder {
 
-        private HashMap<String, String> requestBody;
+        private RequestBodyParams requestBody;
 
-        public void setRequestBody(@Nullable HashMap<String, String> requestBody) {
+        public void setRequestBody(@Nullable RequestBodyParams requestBody) {
             this.requestBody = requestBody;
         }
 
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.POST, requestId, subURL, headers, queryParameters, requestBody);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.POST, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
         }
     }
 
     public static class PutRequestBuilder extends RequestBuilder {
 
-        private HashMap<String, String> requestBody;
+        private RequestBodyParams requestBody;
 
-        public void setRequestBody(@Nullable HashMap<String, String> requestBody) {
+        public void setRequestBody(@Nullable RequestBodyParams requestBody) {
             this.requestBody = requestBody;
         }
 
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.PUT, requestId, subURL, headers, queryParameters, requestBody);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.PUT, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
         }
     }
 
     public static class DeleteRequestBuilder extends RequestBuilder {
 
-        private HashMap<String, String> requestBody;
+        private RequestBodyParams requestBody;
 
-        public void setRequestBody(@Nullable HashMap<String, String> requestBody) {
+        public void setRequestBody(@Nullable RequestBodyParams requestBody) {
             this.requestBody = requestBody;
         }
 
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.DELETE, requestId, subURL, headers, queryParameters, requestBody);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.DELETE, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
         }
     }
 
     public static class FileUploadRequestBuilder extends RequestBuilder {
 
-        private HashMap<String, String> requestBody;
+        private RequestBodyParams requestBody;
 
-        public void setRequestBody(@Nullable HashMap<String, String> requestBody) {
+        public void setRequestBody(@Nullable RequestBodyParams requestBody) {
             this.requestBody = requestBody;
         }
 
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.UPLOAD_FILE, requestId, subURL, headers, queryParameters, requestBody);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.UPLOAD_FILE, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
         }
     }
 
@@ -274,8 +283,8 @@ public final class HttpUtils {
         }
 
         @Override
-        public HttpUtils build() {
-            return new HttpUtils(HttpConstants.HTTPRequestType.DOWNLOAD_FILE, requestId, subURL, headers, queryParameters, null, filePath);
+        public ServiceManager build() {
+            return new ServiceManager(HttpConstants.HTTPRequestType.DOWNLOAD_FILE, requestId, subURL, pathParameters, headers, queryParameters, null, filePath);
         }
     }
 

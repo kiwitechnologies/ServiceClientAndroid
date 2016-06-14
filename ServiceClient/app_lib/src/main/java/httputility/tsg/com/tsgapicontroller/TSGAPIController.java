@@ -45,7 +45,8 @@ public final class TSGAPIController {
         STAGING,
         PRODUCTION,
         QA,
-        DEVELOPMENT;
+        DEVELOPMENT,
+        DUMMY_SERVER;
 
         static void saveBuildFlavor(Context context, BUILD_FLAVOR build_flavor) {
             SharedPreferences.Editor editor = context.getSharedPreferences(TSGAPIController.SharedPrefConstants.SHARED_PREF_FILE_NAME, Context.MODE_PRIVATE).edit();
@@ -64,6 +65,8 @@ public final class TSGAPIController {
                 return QA;
             } else if (buildFalvor.equalsIgnoreCase(STAGING.name())) {
                 return STAGING;
+            } else if (buildFalvor.equalsIgnoreCase(DUMMY_SERVER.name())) {
+                return DUMMY_SERVER;
             } else {
                 return DEVELOPMENT;
             }

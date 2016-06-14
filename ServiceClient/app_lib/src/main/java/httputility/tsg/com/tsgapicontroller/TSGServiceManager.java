@@ -29,7 +29,8 @@ import httputility.tsg.com.tsgapicontroller.validation.TSGValidatorManager;
 import httputility.tsg.com.tsghttpcontroller.HttpConstants;
 import httputility.tsg.com.tsghttpcontroller.HttpRequestExecutor;
 import httputility.tsg.com.tsghttpcontroller.HttpResponse;
-import httputility.tsg.com.tsghttpcontroller.HttpUtils;
+import httputility.tsg.com.tsghttpcontroller.ServiceManager;
+import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
 
 /**
  * Created by Ashish Rajvanshi on 04/05/16.
@@ -51,13 +52,13 @@ import httputility.tsg.com.tsghttpcontroller.HttpUtils;
  *
  * </pre>
  */
-public final class TSGHttpUtility {
+public final class TSGServiceManager {
 
     public static TSGErrorManager ERROR_LOGGER = new TSGErrorManager();
     private static HashMap<String, String> headers;
     public static TSGAPIController.BUILD_FLAVOR build_flavor = null;
 
-    private TSGHttpUtility() {
+    private TSGServiceManager() {
     }
 
     /**
@@ -78,10 +79,24 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId     action Id of API present in the api_validation.java file in Assets
      * @param query_params data for query parameters in form of instance of HashMap
-     * @param body_params  data for body parameters in form of instance of HashMap
+     * @param body_params  data for body parameters in form of instance of RequestBodyParams
      * @throws IOException incase of any IO exception occure.
      */
-    public static void doRequest(Context context, String actionId, HashMap<String, String> query_params, HashMap<String, String> body_params) throws IOException {
+    public static void doRequest(Context context, String actionId, HashMap<String, String> query_params, RequestBodyParams body_params) throws IOException {
+        doRequest(context, actionId, null, query_params, body_params);
+    }
+
+    /**
+     * call this method incase you want to hit api from the same thread
+     *
+     * @param context
+     * @param actionId     action Id of API present in the api_validation.java file in Assets
+     * @param path_params  key value pair of path values in url
+     * @param query_params data for query parameters in form of instance of HashMap
+     * @param body_params  data for body parameters in form of instance of RequestBodyParams
+     * @throws IOException incase of any IO exception occure.
+     */
+    public static void doRequest(Context context, String actionId, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params) throws IOException {
         if (build_flavor == null) {
             build_flavor = TSGAPIController.BUILD_FLAVOR.getBuildFlavor(context);
         }
@@ -91,17 +106,17 @@ public final class TSGHttpUtility {
             return;
         }
 
-        TSGHttpUtility TSGHttpUtility = new TSGHttpUtility();
-        if (!TSGHttpUtility.isDBInitialised(context)) {
+        TSGServiceManager TSGServiceManager = new TSGServiceManager();
+        if (!TSGServiceManager.isDBInitialised(context)) {
             ERROR_LOGGER.getErr_mix().add(Error.ERR_DB_NOT_INITIALISED);
             return;
         }
 
         API action = API.getFromDB(context, actionId);
         if (action != null) {
-            if (TSGValidatorManager.validate(action, query_params, headers, body_params)) {
-                HttpUtils httpUtils = TSGHttpHelper.createRequest(action, query_params, body_params, getHeaders());
-                httpUtils.doRequest();
+            if (TSGValidatorManager.validate(action, path_params, query_params, headers, body_params)) {
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
+                serviceManager.doRequest();
             }
         } else {
             throw new IOException(ERROR_LOGGER.getLog());
@@ -115,9 +130,9 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId        action Id of API present in the api_validation.java file in Assets
      * @param query_params    data for query parameters in form of instance of HashMap
-     * @param requestCallBack callback instance of {@link httputility.tsg.com.tsghttpcontroller.HttpUtils.RequestCallBack}
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBack}
      */
-    public static void enqueRequest(Context context, String actionId, HashMap<String, String> query_params, HttpUtils.RequestCallBack requestCallBack) {
+    public static void enqueRequest(Context context, String actionId, HashMap<String, String> query_params, ServiceManager.RequestCallBack requestCallBack) {
         enqueRequest(context, actionId, query_params, null, requestCallBack);
     }
 
@@ -127,10 +142,24 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId        action Id of API present in the api_validation.java file in Assets
      * @param query_params    data for query parameters in form of instance of HashMap
-     * @param body_params     data for body parameters in form of instance of HashMap
-     * @param requestCallBack callback instance of {@link httputility.tsg.com.tsghttpcontroller.HttpUtils.RequestCallBack}
+     * @param body_params     data for body parameters in form of instance of RequestBodyParams
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBack}
      */
-    public static void enqueRequest(Context context, String actionId, HashMap<String, String> query_params, HashMap<String, String> body_params, HttpUtils.RequestCallBack requestCallBack) {
+    public static void enqueRequest(Context context, String actionId, HashMap<String, String> query_params, RequestBodyParams body_params, ServiceManager.RequestCallBack requestCallBack) {
+        enqueRequest(context, actionId, null, query_params, body_params, requestCallBack);
+    }
+
+    /**
+     * call this method incase you want to hit api from the background thread
+     *
+     * @param context
+     * @param actionId        action Id of API present in the api_validation.java file in Assets
+     * @param path_params     key value pair of path values in url
+     * @param query_params    data for query parameters in form of instance of HashMap
+     * @param body_params     data for body parameters in form of instance of RequestBodyParams
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBack}
+     */
+    public static void enqueRequest(Context context, String actionId, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, ServiceManager.RequestCallBack requestCallBack) {
         if (build_flavor == null) {
             build_flavor = TSGAPIController.BUILD_FLAVOR.getBuildFlavor(context);
         }
@@ -141,8 +170,8 @@ public final class TSGHttpUtility {
             return;
         }
 
-        TSGHttpUtility TSGHttpUtility = new TSGHttpUtility();
-        if (!TSGHttpUtility.isDBInitialised(context)) {
+        TSGServiceManager TSGServiceManager = new TSGServiceManager();
+        if (!TSGServiceManager.isDBInitialised(context)) {
             ERROR_LOGGER.getErr_mix().add(Error.ERR_DB_NOT_INITIALISED);
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
             return;
@@ -152,11 +181,11 @@ public final class TSGHttpUtility {
         if (action == null) {
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
         } else {
-            if (TSGValidatorManager.validate(action, query_params, body_params, getHeaders())) {
-                HttpUtils httpUtils = TSGHttpHelper.createRequest(action, query_params, body_params, getHeaders());
-                httpUtils.enqueRequest(requestCallBack);
+            if (TSGValidatorManager.validate(action, path_params, query_params, body_params, getHeaders())) {
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
+                serviceManager.enqueRequest(requestCallBack);
             } else {
-                respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGHttpUtility.ERROR_LOGGER.getLog()));
+                respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGServiceManager.ERROR_LOGGER.getLog()));
             }
         }
     }
@@ -167,9 +196,9 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId        action Id of API present in the api_validation.java file in Assets
      * @param query_params    data for query parameters in form of instance of HashMap
-     * @param requestCallBack callback instance of {@link HttpUtils.RequestCallBackWithProgress}
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
      */
-    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, HttpUtils.RequestCallBackWithProgress requestCallBack) {
+    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, ServiceManager.RequestCallBackWithProgress requestCallBack) {
         enqueMultipartFileUploadRequest(context, actionId, query_params, null, requestCallBack);
     }
 
@@ -179,10 +208,10 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId        action Id of API present in the api_validation.java file in Assets
      * @param query_params    data for query parameters in form of instance of HashMap
-     * @param body_params     data for body parameters in form of instance of HashMap
-     * @param requestCallBack callback instance of {@link HttpUtils.RequestCallBackWithProgress}
+     * @param body_params     data for body parameters in form of instance of RequestBodyParams
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
      */
-    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, HashMap<String, String> body_params, HttpUtils.RequestCallBackWithProgress requestCallBack) {
+    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, RequestBodyParams body_params, ServiceManager.RequestCallBackWithProgress requestCallBack) {
         enqueMultipartFileUploadRequest(context, actionId, query_params, body_params, HttpConstants.IMAGE_QUALITY.DEFALUT, requestCallBack);
     }
 
@@ -192,11 +221,26 @@ public final class TSGHttpUtility {
      * @param context
      * @param actionId        action Id of API present in the api_validation.java file in Assets
      * @param query_params    data for query parameters in form of instance of HashMap
-     * @param body_params     data for body parameters in form of instance of HashMap
+     * @param body_params     data for body parameters in form of instance of RequestBodyParams
      * @param image_quality   instance of {@link HttpConstants.IMAGE_QUALITY} incase of image. It will help to compress the image based on you input quality in this
-     * @param requestCallBack callback instance of {@link HttpUtils.RequestCallBackWithProgress}
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
      */
-    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, HashMap<String, String> body_params, HttpConstants.IMAGE_QUALITY image_quality, HttpUtils.RequestCallBackWithProgress requestCallBack) {
+    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, RequestBodyParams body_params, HttpConstants.IMAGE_QUALITY image_quality, ServiceManager.RequestCallBackWithProgress requestCallBack) {
+        enqueMultipartFileUploadRequest(context, actionId, null, query_params, body_params, image_quality, requestCallBack);
+    }
+
+    /**
+     * call this method for multipart form data request in background thread
+     *
+     * @param context
+     * @param actionId        action Id of API present in the api_validation.java file in Assets
+     * @param path_params     key value pair of path values in url
+     * @param query_params    data for query parameters in form of instance of HashMap
+     * @param body_params     data for body parameters in form of instance of RequestBodyParams
+     * @param image_quality   instance of {@link HttpConstants.IMAGE_QUALITY} incase of image. It will help to compress the image based on you input quality in this
+     * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
+     */
+    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HttpConstants.IMAGE_QUALITY image_quality, ServiceManager.RequestCallBackWithProgress requestCallBack) {
         if (build_flavor == null) {
             build_flavor = TSGAPIController.BUILD_FLAVOR.getBuildFlavor(context);
         }
@@ -207,8 +251,8 @@ public final class TSGHttpUtility {
             return;
         }
 
-        TSGHttpUtility TSGHttpUtility = new TSGHttpUtility();
-        if (!TSGHttpUtility.isDBInitialised(context)) {
+        TSGServiceManager TSGServiceManager = new TSGServiceManager();
+        if (!TSGServiceManager.isDBInitialised(context)) {
             ERROR_LOGGER.getErr_mix().add(Error.ERR_DB_NOT_INITIALISED);
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
             return;
@@ -216,18 +260,18 @@ public final class TSGHttpUtility {
         API action = API.getFromDB(context, actionId);
 
         if (action == null) {
-            respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGHttpUtility.ERROR_LOGGER.getLog()));
+            respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGServiceManager.ERROR_LOGGER.getLog()));
         } else {
-            if (TSGValidatorManager.validate(action, query_params, body_params, getHeaders())) {
+            if (TSGValidatorManager.validate(action, path_params, query_params, body_params, getHeaders())) {
                 action.setRequest_type("UPLOAD");
-                HttpUtils httpUtils = TSGHttpHelper.createRequest(action, query_params, body_params, getHeaders());
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
                 HashSet<String> multipartKeyNamesSet = new HashSet<String>();
                 for (int i = 0; i < action.getMultipartFileBody_parameters().length; i++) {
                     multipartKeyNamesSet.add(action.getMultipartFileBody_parameters()[i].getKey_name());
                 }
-                httpUtils.enqueFileRequestWithProgress(multipartKeyNamesSet, requestCallBack, image_quality);
+                serviceManager.enqueFileRequestWithProgress(multipartKeyNamesSet, requestCallBack, image_quality);
             } else {
-                respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGHttpUtility.ERROR_LOGGER.getLog()));
+                respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGServiceManager.ERROR_LOGGER.getLog()));
             }
         }
     }
@@ -261,19 +305,19 @@ public final class TSGHttpUtility {
     }
 
     /**
-     * call this function to set the header for all request. These header will share between all request. You can also modify or remove the headers using {@link TSGHttpUtility#setHeaders(HashMap)}  and {@link TSGHttpUtility#removeHeaders()} funtion
+     * call this function to set the header for all request. These header will share between all request. You can also modify or remove the headers using {@link TSGServiceManager#setHeaders(HashMap)}  and {@link TSGServiceManager#removeHeaders()} funtion
      *
      * @param headers instance of HashMap of headers to set
      */
     public static void setHeaders(HashMap<String, String> headers) {
-        TSGHttpUtility.headers = headers;
+        TSGServiceManager.headers = headers;
     }
 
     /**
      * call this function incase you want to remove all headers
      */
     public static void removeHeaders() {
-        TSGHttpUtility.headers = null;
+        TSGServiceManager.headers = null;
     }
 
 
@@ -284,16 +328,16 @@ public final class TSGHttpUtility {
      * @param requestCallBack callback to get the response
      * @throws IOException Incase you have not initialise the application from {@link TSGAPIController#init(Context, TSGAPIController.BUILD_FLAVOR)} class
      */
-    public static void getVersionName(Context context, final HttpUtils.RequestCallBack requestCallBack) throws IOException {
+    public static void getVersionName(Context context, final ServiceManager.RequestCallBack requestCallBack) throws IOException {
         final Project apiInfo = Project.getFromDB(context);
         if (apiInfo.getProject_id() == null) {
             throw new IOException("init function not called of TSGAPIController class");
         }
 
-        HttpUtils.GetRequestBuilder builder = new HttpUtils.GetRequestBuilder();
+        ServiceManager.GetRequestBuilder builder = new ServiceManager.GetRequestBuilder();
 
         builder.setSubURL(String.format(Constants.URL_GET_API_INFO_VERSION, apiInfo.getProject_id()));
-        builder.build().enqueRequest(new HttpUtils.RequestCallBack() {
+        builder.build().enqueRequest(new ServiceManager.RequestCallBack() {
             @Override
             public void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse) {
                 requestCallBack.onFailure(requestId, throwable, errorResponse);
@@ -330,7 +374,7 @@ public final class TSGHttpUtility {
         });
     }
 
-    private static void respondFailure(HttpUtils.RequestCallBack requestCallBack, String requestId, IllegalArgumentException e) {
+    private static void respondFailure(ServiceManager.RequestCallBack requestCallBack, String requestId, IllegalArgumentException e) {
         requestCallBack.onFailure(requestId, e, null);
         requestCallBack.onFinish(requestId);
     }

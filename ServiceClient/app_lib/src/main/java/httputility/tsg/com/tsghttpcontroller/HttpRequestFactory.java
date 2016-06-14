@@ -30,29 +30,29 @@ import okhttp3.RequestBody;
  */
 public class HttpRequestFactory {
 
-    private final HttpUtils httpUtils;
-    private final HttpUtils.RequestCallBack requestCallBack;
+    private final ServiceManager serviceManager;
+    private final ServiceManager.RequestCallBack requestCallBack;
     private Request.Builder requestBuilder;
 
-    private HttpRequestFactory(HttpUtils httpUtils, HttpUtils.RequestCallBack requestCallBack) {
-        this.httpUtils = httpUtils;
+    private HttpRequestFactory(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
+        this.serviceManager = serviceManager;
         this.requestCallBack = requestCallBack;
         requestBuilder = new Request.Builder();
     }
 
-    public static Request getRequest(HttpUtils httpUtils, HttpUtils.RequestCallBack requestCallBack) throws IOException {
-        if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.GET) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createGetRequest();
-        } else if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.POST) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createPostRequest();
-        } else if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.PUT) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createPutRequest();
-        } else if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.DELETE) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createDeleteRequest();
-        } else if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.DOWNLOAD_FILE) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createGetRequest();
-        } else if (httpUtils.getHTTPRequestType() == HttpConstants.HTTPRequestType.UPLOAD_FILE) {
-            return new HttpRequestFactory(httpUtils, requestCallBack).createPostMultipartFileRequest();
+    public static Request getRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) throws IOException {
+        if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.GET) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createGetRequest();
+        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.POST) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createPostRequest();
+        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.PUT) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createPutRequest();
+        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.DELETE) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createDeleteRequest();
+        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.DOWNLOAD_FILE) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createGetRequest();
+        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.UPLOAD_FILE) {
+            return new HttpRequestFactory(serviceManager, requestCallBack).createPostMultipartFileRequest();
         }
         return null;
     }
@@ -66,7 +66,7 @@ public class HttpRequestFactory {
     private Request createPostRequest() {
         addHeaders();
         addQueryStrings();
-        RequestBody requestBody = addBodyParametersJSONData();
+        RequestBody requestBody = addBodyParameters();
         requestBuilder.post(requestBody);
         return requestBuilder.build();
     }
@@ -74,7 +74,7 @@ public class HttpRequestFactory {
     private Request createPutRequest() {
         addHeaders();
         addQueryStrings();
-        RequestBody requestBody = addBodyParametersJSONData();
+        RequestBody requestBody = addBodyParameters();
         requestBuilder.put(requestBody);
         return requestBuilder.build();
     }
@@ -82,7 +82,7 @@ public class HttpRequestFactory {
     private Request createDeleteRequest() {
         addHeaders();
         addQueryStrings();
-        RequestBody requestBody = addBodyParametersJSONData();
+        RequestBody requestBody = addBodyParameters();
         requestBuilder.delete(requestBody);
         return requestBuilder.build();
     }
@@ -96,8 +96,8 @@ public class HttpRequestFactory {
 
     private void addHeaders() {
         //Add header data
-        if (httpUtils.getHeaders() != null && httpUtils.getHeaders().size() > 0) {
-            HashMap<String, String> headersParam = httpUtils.getHeaders();
+        if (serviceManager.getHeaders() != null && serviceManager.getHeaders().size() > 0) {
+            HashMap<String, String> headersParam = serviceManager.getHeaders();
 
             ArrayList keys = new ArrayList(headersParam.keySet());
             for (int i = 0; i < keys.size(); i++) {
@@ -106,11 +106,19 @@ public class HttpRequestFactory {
         }
     }
 
-    private FormBody addBodyParametersData() {
+    private RequestBody addBodyParameters() {
+        if (serviceManager.getBody_params() == null || serviceManager.getBody_params().getType() == RequestBodyParams.TYPE.RAW_APPLICATION_JSON) {
+            return addBodyParametersApplicationJSONData();
+        } else {
+            return addBodyParametersFormData();
+        }
+    }
+
+    private FormBody addBodyParametersFormData() {
         //Add post body data
         FormBody.Builder formBodyBuilder = new FormBody.Builder();
-        if (httpUtils.getBody_params() != null && httpUtils.getBody_params().size() > 0) {
-            HashMap<String, String> requestBody = httpUtils.getBody_params();
+        if (serviceManager.getBody_params() != null && serviceManager.getBody_params().size() > 0) {
+            HashMap<String, String> requestBody = serviceManager.getBody_params();
             ArrayList keys = new ArrayList(requestBody.keySet());
             for (int i = 0; i < keys.size(); i++) {
                 formBodyBuilder.add(keys.get(i).toString(), requestBody.get(keys.get(i)).toString());
@@ -119,12 +127,12 @@ public class HttpRequestFactory {
         return formBodyBuilder.build();
     }
 
-    private RequestBody addBodyParametersJSONData() {
-        if (httpUtils.getBody_params() != null && httpUtils.getBody_params().size() > 0) {
+    private RequestBody addBodyParametersApplicationJSONData() {
+        if (serviceManager.getBody_params() != null && serviceManager.getBody_params().size() > 0) {
             MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-            String json = httpUtils.getBody_params().toString();
+            String json = serviceManager.getBody_params().toString();
             try {
-                String mapAsJson = new ObjectMapper().writeValueAsString(httpUtils.getBody_params());
+                String mapAsJson = new ObjectMapper().writeValueAsString(serviceManager.getBody_params());
                 RequestBody body = RequestBody.create(JSON, mapAsJson);
                 return body;
             } catch (IOException e) {
@@ -137,10 +145,11 @@ public class HttpRequestFactory {
     }
 
     private void addQueryStrings() {
-        //Add get query string
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(httpUtils.getRequestedURL()).newBuilder();
-        if (httpUtils.getQuery_params() != null && httpUtils.getQuery_params().size() > 0) {
-            HashMap<String, String> queryParam = httpUtils.getQuery_params();
+        String url = serviceManager.getRequestedURL();
+        url = addPathParameters(url);
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(url).newBuilder();
+        if (serviceManager.getQuery_params() != null && serviceManager.getQuery_params().size() > 0) {
+            HashMap<String, String> queryParam = serviceManager.getQuery_params();
             ArrayList keys = new ArrayList(queryParam.keySet());
             for (int i = 0; i < keys.size(); i++) {
                 urlBuilder.addQueryParameter(keys.get(i).toString(), queryParam.get(keys.get(i)).toString());
@@ -149,27 +158,45 @@ public class HttpRequestFactory {
         requestBuilder.url(urlBuilder.build());
     }
 
+    private String addPathParameters(String url) {
+        if (!url.contains("{")) {
+            return url;
+        }
+        ArrayList<String> pathParametersList = Utility.getPathParamsInURL(url);
+        HashMap<String, String> pathParametersValueMap = serviceManager.getPath_parameter();
+
+        for (int i = 0; pathParametersList!=null && i < pathParametersList.size(); i++) {
+            String pathParameter = pathParametersList.get(i);
+            String value = pathParametersValueMap.get(pathParameter);
+            if (value == null) {
+                continue;
+            }
+            url = url.replace("{" + pathParameter + "}", value);
+        }
+        return url;
+    }
+
     private void addMultipartPostBodyData() {
 
         MultipartBody.Builder multipartBodybuilder = new MultipartBody.Builder();
         multipartBodybuilder.setType(MultipartBody.FORM);
 
         //Add post body data
-        if (httpUtils.getBody_params() != null && httpUtils.getBody_params().size() > 0) {
+        if (serviceManager.getBody_params() != null && serviceManager.getBody_params().size() > 0) {
 
-            HashMap<String, String> requestBodyParams = httpUtils.getBody_params();
+            HashMap<String, String> requestBodyParams = serviceManager.getBody_params();
             FormBody.Builder formBodyBuilder = new FormBody.Builder();
             ArrayList keys = new ArrayList(requestBodyParams.keySet());
 
             for (int i = 0; i < keys.size(); i++) {
-                if (httpUtils.getMultipartKeyNamesSet().contains(keys.get(i))) {
+                if (serviceManager.getMultipartKeyNamesSet().contains(keys.get(i))) {
                     File file = new File(requestBodyParams.get(keys.get(i)).toString());
                     multipartBodybuilder.addPart(Headers.of("Content-Disposition", "form-data; name=\"" + keys.get(i) + "\"; filename=\"" + file.getName() + "\""),
-                            new CountingFileRequestBody(file, httpUtils.getImage_quality(), HttpConstants.getMimeType(file.getName()), new CountingFileRequestBody.ProgressListener() {
+                            new CountingFileRequestBody(file, serviceManager.getImage_quality(), HttpConstants.getMimeType(file.getName()), new CountingFileRequestBody.ProgressListener() {
                                 @Override
                                 public void inProgress(String requestId, String fileName, long num, long totalSize) {
-                                    if (requestCallBack != null && requestCallBack instanceof HttpUtils.RequestCallBackWithProgress) {
-                                        ((HttpUtils.RequestCallBackWithProgress) requestCallBack).inProgress(httpUtils.getRequestId(), fileName, num, totalSize);
+                                    if (requestCallBack != null && requestCallBack instanceof ServiceManager.RequestCallBackWithProgress) {
+                                        ((ServiceManager.RequestCallBackWithProgress) requestCallBack).inProgress(serviceManager.getRequestId(), fileName, num, totalSize);
                                     }
                                 }
                             })

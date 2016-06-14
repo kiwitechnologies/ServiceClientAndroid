@@ -21,11 +21,14 @@ public final class APIContract {
         public static final String ACTION_ID = "action_id";
         public static final String ACTION = "action";
         public static final String REQUEST_TYPE = "request_type";
+        public static final String PARAMS_PARAMETERS = "params_parameters";
 
         public static final String DEV_BASE_URL = "dev_base_url";
         public static final String QA_BASE_URL = "qa_base_url";
         public static final String PROD_BASE_URL = "prod_base_url";
         public static final String STAGE_BASE_URL = "stage_base_url";
+        public static final String DUMMY_SERVER_BASE_URL = "dummy_server_base_url";
+
     }
 
     public final static class BodyParametersTable {

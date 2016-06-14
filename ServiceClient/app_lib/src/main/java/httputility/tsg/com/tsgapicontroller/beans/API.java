@@ -9,7 +9,6 @@
  */
 package httputility.tsg.com.tsgapicontroller.beans;
 
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -19,7 +18,7 @@ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import java.util.ArrayList;
 
 import httputility.tsg.com.tsgapicontroller.TSGAPIController;
-import httputility.tsg.com.tsgapicontroller.TSGHttpUtility;
+import httputility.tsg.com.tsgapicontroller.TSGServiceManager;
 import httputility.tsg.com.tsgapicontroller.storage.APIContract;
 import httputility.tsg.com.tsgapicontroller.storage.APIDBManager;
 import httputility.tsg.com.tsgapicontroller.validation.Error;
@@ -37,6 +36,8 @@ public final class API {
     private String qa_url;
     private String staging_url;
     private String production_url;
+    private String dummy_server_url;
+    private int params_parameters;
     private String dev_url;
     private BodyParameter[] body_parameters;
     private QueryParameter[] query_parameters;
@@ -76,12 +77,14 @@ public final class API {
     }
 
     public String getBase_url() {
-        if (TSGHttpUtility.build_flavor == TSGAPIController.BUILD_FLAVOR.PRODUCTION)
+        if (TSGServiceManager.build_flavor == TSGAPIController.BUILD_FLAVOR.PRODUCTION)
             return getProduction_url();
-        else if (TSGHttpUtility.build_flavor == TSGAPIController.BUILD_FLAVOR.QA)
+        else if (TSGServiceManager.build_flavor == TSGAPIController.BUILD_FLAVOR.QA)
             return getQa_url();
-        else if (TSGHttpUtility.build_flavor == TSGAPIController.BUILD_FLAVOR.STAGING)
+        else if (TSGServiceManager.build_flavor == TSGAPIController.BUILD_FLAVOR.STAGING)
             return getStaging_url();
+        else if (TSGServiceManager.build_flavor == TSGAPIController.BUILD_FLAVOR.DUMMY_SERVER)
+            return getDummy_server_url();
         return getDev_url();
     }
 
@@ -107,6 +110,22 @@ public final class API {
 
     public void setProduction_url(String production_url) {
         this.production_url = production_url;
+    }
+
+    public int getParams_parameters() {
+        return params_parameters;
+    }
+
+    public void setParams_parameters(int params_parameters) {
+        this.params_parameters = params_parameters;
+    }
+
+    public String getDummy_server_url() {
+        return dummy_server_url;
+    }
+
+    public void setDummy_server_url(String dummy_server_url) {
+        this.dummy_server_url = dummy_server_url;
     }
 
     public String getDev_url() {
@@ -167,8 +186,6 @@ public final class API {
 
     public void insertIntoDB(Context mContext) {
 
-        ContentResolver contentResolver = mContext.getContentResolver();
-
         ContentValues cvAction = new ContentValues();
         cvAction.put(APIContract.ActionsTable.ACTION_ID, getAction_id());
         cvAction.put(APIContract.ActionsTable.ACTION, getAction());
@@ -177,6 +194,8 @@ public final class API {
         cvAction.put(APIContract.ActionsTable.QA_BASE_URL, getQa_url());
         cvAction.put(APIContract.ActionsTable.PROD_BASE_URL, getProduction_url());
         cvAction.put(APIContract.ActionsTable.STAGE_BASE_URL, getStaging_url());
+        cvAction.put(APIContract.ActionsTable.DUMMY_SERVER_BASE_URL, getDummy_server_url());
+        cvAction.put(APIContract.ActionsTable.PARAMS_PARAMETERS, getParams_parameters());
         long actionId = APIDBManager.getInstance(mContext).insert(APIDBManager.KEY_ACTION, cvAction);
 
         for (int i = 0; null != getAllBody_parameters() && i < getAllBody_parameters().length; i++) {
@@ -196,7 +215,7 @@ public final class API {
     public static API getFromDB(Context context, String actionId) {
         Cursor curAction = APIDBManager.getInstance(context).query(APIDBManager.KEY_ACTION, new String[]{APIContract.ActionsTable._ID}, APIContract.ActionsTable.ACTION_ID + " =? ", new String[]{actionId}, null);
         if (curAction != null && curAction.getCount() == 0) {
-            TSGHttpUtility.ERROR_LOGGER.getErr_actions().add(String.format(Error.ERR_ACTION_NAME_NOT_FOUND, actionId));
+            TSGServiceManager.ERROR_LOGGER.getErr_actions().add(String.format(Error.ERR_ACTION_NAME_NOT_FOUND, actionId));
             return null;
         }
         curAction.moveToFirst();
@@ -220,6 +239,8 @@ public final class API {
         action.setQa_url(curAction.getString(curAction.getColumnIndex(APIContract.ActionsTable.QA_BASE_URL)));
         action.setProduction_url(curAction.getString(curAction.getColumnIndex(APIContract.ActionsTable.PROD_BASE_URL)));
         action.setStaging_url(curAction.getString(curAction.getColumnIndex(APIContract.ActionsTable.STAGE_BASE_URL)));
+        action.setDummy_server_url(curAction.getString(curAction.getColumnIndex(APIContract.ActionsTable.DUMMY_SERVER_BASE_URL)));
+        action.setParams_parameters(curAction.getInt(curAction.getColumnIndex(APIContract.ActionsTable.PARAMS_PARAMETERS)));
         closeCursor(curAction);
 
         Cursor curBody = APIDBManager.getInstance(context).query(APIDBManager.KEY_BODY_PARAMETERS, new String[]{APIContract.BodyParametersTable._ID}, APIContract.BodyParametersTable.ACTION_ID + " =? ", new String[]{action.getId() + ""}, null);

@@ -9,6 +9,7 @@ public class Error {
     public static final String ERR_EMPTY_ACTION_NAME = "“%s” can not be empty.";
     public static final String ERR_ACTION_NAME_NOT_FOUND = "Action id “%s” not found.";
     public static final String ERR_KEYNAME_NOT_FOUND = "Not found. Please send it in the request.";
+    public static final String ERR_URL_PATH_PARAMETER_NOT_FOUND = "Not found. Please send it in the request.";
     public static final String ERR_KEYNAME_WRONG_DATA_TYPE = "Not a valid data type. “%s” expects a “%s” type.";
     public static final String ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE = "Format is not valid. It expects a “%s” format.";
     public static final String ERR_KEYNAME_WRONG_LENGTH = "%s is not correct. It should be between “%s” - “%s”.";

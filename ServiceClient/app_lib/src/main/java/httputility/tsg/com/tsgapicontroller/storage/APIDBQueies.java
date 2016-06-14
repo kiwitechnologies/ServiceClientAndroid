@@ -24,6 +24,8 @@ public class APIDBQueies {
                 + APIContract.ActionsTable.STAGE_BASE_URL + " TEXT, "
                 + APIContract.ActionsTable.DEV_BASE_URL + " TEXT, "
                 + APIContract.ActionsTable.PROD_BASE_URL + " TEXT, "
+                + APIContract.ActionsTable.DUMMY_SERVER_BASE_URL + " TEXT, "
+                + APIContract.ActionsTable.PARAMS_PARAMETERS + " integer, "
                 + APIContract.ActionsTable.QA_BASE_URL + " TEXT );";
 
 

@@ -154,8 +154,27 @@
                 android:text="Cancel Request" />
         </RelativeLayout>
 
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <Button
+                android:id="@+id/btnPathParameter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Path Parameter Request" />
+
+            <Button
+                android:id="@+id/btnPathParamReqCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:text="Cancel Request" />
+        </RelativeLayout>
+
         <Button
-            android:id="@+id/btnExtra"
+            android:id="@+id/btnCancelAll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"

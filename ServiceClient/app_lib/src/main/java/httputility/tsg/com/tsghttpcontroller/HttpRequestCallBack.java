@@ -30,20 +30,20 @@ import okhttp3.Response;
  */
 class HttpRequestCallBack implements Callback {
 
-    private HttpUtils.RequestCallBack requestCallBack;
+    private ServiceManager.RequestCallBack requestCallBack;
     private String requestId;
     private HttpConstants.HTTPRequestType requestType;
     private String downloadFilePath;
     private Handler handler;
     private long requestTime;
 
-    public HttpRequestCallBack(HttpUtils httpUtils, HttpUtils.RequestCallBack requestCallBack) {
+    public HttpRequestCallBack(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
         handler = new Handler(Looper.getMainLooper());
         this.requestCallBack = requestCallBack;
-        this.requestId = httpUtils.getRequestId();
-        this.requestType = httpUtils.getHTTPRequestType();
-        this.downloadFilePath = httpUtils.getDownloadFilePath();
-        this.requestTime = httpUtils.getRequestTime();
+        this.requestId = serviceManager.getRequestId();
+        this.requestType = serviceManager.getHTTPRequestType();
+        this.downloadFilePath = serviceManager.getDownloadFilePath();
+        this.requestTime = serviceManager.getRequestTime();
     }
 
     /**
@@ -140,11 +140,11 @@ class HttpRequestCallBack implements Callback {
     }
 
     private void postProgresCallbackMsg(final String requestId, final String fileName, final long downloaded, final long contentLength) {
-        if (requestCallBack != null && requestCallBack instanceof HttpUtils.RequestCallBackWithProgress) {
+        if (requestCallBack != null && requestCallBack instanceof ServiceManager.RequestCallBackWithProgress) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    ((HttpUtils.RequestCallBackWithProgress) requestCallBack).inProgress(requestId, fileName, downloaded, contentLength);
+                    ((ServiceManager.RequestCallBackWithProgress) requestCallBack).inProgress(requestId, fileName, downloaded, contentLength);
                 }
             });
         }

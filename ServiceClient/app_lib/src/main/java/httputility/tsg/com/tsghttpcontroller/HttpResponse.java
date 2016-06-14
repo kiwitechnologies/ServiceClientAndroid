@@ -10,6 +10,11 @@
 
 package httputility.tsg.com.tsghttpcontroller;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 import okhttp3.Response;
 
 /**
@@ -28,13 +33,33 @@ public final class HttpResponse {
         successful = response.isSuccessful();
         message = response.message();
         redirect = response.isRedirect();
-        try {
-            body = response.body().string();
-        } catch (Exception e) {
-            if (successful) {
-                body = "Successful";
+
+        if (isGzipResponse(response)) {
+            try {
+                body = Utility.streamToString(response.body().byteStream());
+            } catch (IOException e) {
+                body = "Error in parsing gzip response";
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                body = response.body().string();
+            } catch (Exception e) {
+                if (successful) {
+                    body = "Successful";
+                }
             }
         }
+    }
+
+    private boolean isGzipResponse(Response response) {
+        try {
+            if ("gzip".equals(response.networkResponse().header("content-encoding").toLowerCase())) {
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
     }
 
     public HttpResponse(int code, String body, boolean successful, String message, boolean redirect) {
@@ -65,4 +90,5 @@ public final class HttpResponse {
     public boolean isRedirect() {
         return redirect;
     }
+
 }

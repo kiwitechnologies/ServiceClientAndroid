@@ -13,7 +13,8 @@ package httputility.tsg.com.tsgapicontroller;
 import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.beans.API;
-import httputility.tsg.com.tsghttpcontroller.HttpUtils;
+import httputility.tsg.com.tsghttpcontroller.ServiceManager;
+import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
 
 /**
  * Created by kiwitech on 16/05/16.
@@ -22,48 +23,53 @@ class TSGHttpHelper {
 
     private final API action;
     private final HashMap<String, String> query_params;
-    private final HashMap<String, String> body_params;
+    private final RequestBodyParams body_params;
     private final HashMap<String, String> header;
     private final String filePathForDownload;
+    private final HashMap<String, String> path_params;
 
-    public TSGHttpHelper(API action, HashMap<String, String> query_params, HashMap<String, String> body_params, HashMap<String, String> header, String filePathForDownload) {
+    public TSGHttpHelper(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, String filePathForDownload) {
         this.action = action;
+        this.path_params = path_params;
         this.query_params = query_params;
         this.body_params = body_params;
         this.header = header;
         this.filePathForDownload = filePathForDownload;
     }
 
-    public static HttpUtils createRequest(API action, HashMap<String, String> query_params, HashMap<String, String> body_params, HashMap<String, String> header) {
-        return createRequest(action, query_params, body_params, header, null);
+    public static ServiceManager createRequest(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header) {
+        return createRequest(action, path_params, query_params, body_params, header, null);
     }
 
-    public static HttpUtils createRequest(API action, HashMap<String, String> query_params, HashMap<String, String> body_params, HashMap<String, String> header, String filePathForDownload) {
-        TSGHttpHelper tsgHttpHelper = new TSGHttpHelper(action, query_params, body_params, header, filePathForDownload);
+    public static ServiceManager createRequest(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, String filePathForDownload) {
+        TSGHttpHelper tsgHttpHelper = new TSGHttpHelper(action, path_params, query_params, body_params, header, filePathForDownload);
         return tsgHttpHelper.createRequest();
     }
 
-    private HttpUtils createRequest() {
-        HttpUtils.RequestBuilder requestBuilder = null;
+    private ServiceManager createRequest() {
+        ServiceManager.RequestBuilder requestBuilder = null;
         if (action.getRequest_type().equalsIgnoreCase("GET")) {
-            requestBuilder = new HttpUtils.GetRequestBuilder();
+            requestBuilder = new ServiceManager.GetRequestBuilder();
         } else if (action.getRequest_type().equalsIgnoreCase("POST")) {
-            requestBuilder = new HttpUtils.PostRequestBuilder();
-            ((HttpUtils.PostRequestBuilder) requestBuilder).setRequestBody(body_params);
+            requestBuilder = new ServiceManager.PostRequestBuilder();
+            ((ServiceManager.PostRequestBuilder) requestBuilder).setRequestBody(body_params);
         } else if (action.getRequest_type().equalsIgnoreCase("PUT")) {
-            requestBuilder = new HttpUtils.PutRequestBuilder();
-            ((HttpUtils.PutRequestBuilder) requestBuilder).setRequestBody(body_params);
+            requestBuilder = new ServiceManager.PutRequestBuilder();
+            ((ServiceManager.PutRequestBuilder) requestBuilder).setRequestBody(body_params);
         } else if (action.getRequest_type().equalsIgnoreCase("DELETE")) {
-            requestBuilder = new HttpUtils.DeleteRequestBuilder();
-            ((HttpUtils.DeleteRequestBuilder) requestBuilder).setRequestBody(body_params);
+            requestBuilder = new ServiceManager.DeleteRequestBuilder();
+            ((ServiceManager.DeleteRequestBuilder) requestBuilder).setRequestBody(body_params);
         } else if (action.getRequest_type().equalsIgnoreCase("UPLOAD")) {
-            requestBuilder = new HttpUtils.FileUploadRequestBuilder();
-            ((HttpUtils.FileUploadRequestBuilder) requestBuilder).setRequestBody(body_params);
+            requestBuilder = new ServiceManager.FileUploadRequestBuilder();
+            ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setRequestBody(body_params);
         } else if (action.getRequest_type().equalsIgnoreCase("DOWNLOAD")) {
-            requestBuilder = new HttpUtils.FileDownloadRequestBuilder();
-            ((HttpUtils.FileDownloadRequestBuilder) requestBuilder).setFilePath(filePathForDownload);
+            requestBuilder = new ServiceManager.FileDownloadRequestBuilder();
+            ((ServiceManager.FileDownloadRequestBuilder) requestBuilder).setFilePath(filePathForDownload);
         } else {
             throw new IllegalArgumentException("Invalid action type in api");
+        }
+        if (action.getParams_parameters() == 1) {
+            requestBuilder.setPathParameters(path_params);
         }
         requestBuilder.setQueryParameters(query_params);
         requestBuilder.setHeaders(header);

@@ -3,7 +3,7 @@ package httputility.tsg.com.tsgapicontroller.validation;
 import android.util.Patterns;
 
 import httputility.tsg.com.tsgapicontroller.Constants;
-import httputility.tsg.com.tsgapicontroller.TSGHttpUtility;
+import httputility.tsg.com.tsgapicontroller.TSGServiceManager;
 import httputility.tsg.com.tsgapicontroller.beans.BodyParameter;
 import httputility.tsg.com.tsgapicontroller.beans.QueryParameter;
 
@@ -53,19 +53,19 @@ public class TSGValidationHelper {
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.INTEGER.ordinal() && isIntValue(value)) {
             int intVal = Integer.parseInt(value);
             if (!(Integer.parseInt(min) <= intVal && intVal <= Integer.parseInt(max))) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Range", min, max));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Range", min, max));
                 validData = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.FLOAT.ordinal() && isFloatValue(value)) {
             float floattVal = Float.parseFloat(value);
             if (!(Float.parseFloat(min) <= floattVal && floattVal <= Float.parseFloat(max))) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Range", min, max));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Range", min, max));
                 validData = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.STRING.ordinal() && value instanceof String) {
             String strVal = (String) value;
             if (!(Integer.parseInt(min) <= strVal.length() && strVal.length() <= Integer.parseInt(max))) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Length", min, max));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_LENGTH, "Length", min, max));
                 validData = false;
             }
         }
@@ -80,31 +80,31 @@ public class TSGValidationHelper {
         }
         if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.INTEGER.ordinal()) {
             if (!isIntValue(data)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "Integer"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "Integer"));
                 isValid = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.FLOAT.ordinal()) {
             if (!isFloatValue(data)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "Float"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "Float"));
                 isValid = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.STRING.ordinal()) {
             if (!(data instanceof String)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "String"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "String"));
                 isValid = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.TEXT.ordinal()) {
             if (!(data instanceof String)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "String"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "String"));
                 isValid = false;
             }
         } else if (dataTypeIndex == Constants.SERVER_CONST.VALIDATION_DATA_TYPE.FILE.ordinal()) {
             if (!(data instanceof String) || !isBodyParam) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "File"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_DATA_TYPE, keyName, "File"));
                 isValid = false;
             }
         } else {
-            TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, "Invalid data type index in API");
+            TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParam).addErrInvalid(keyName, "Invalid data type index in API");
         }
         return isValid;
     }
@@ -127,18 +127,18 @@ public class TSGValidationHelper {
         String strValue = (String) objValue;
         if (Constants.SERVER_CONST.STRING_FORMAT.STRING_FORMAT_ALPHA.ordinal() == formatString) {
             if (!isAlPhaValue(strValue)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Alpha"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Alpha"));
                 isValid = false;
             }
         } else if (Constants.SERVER_CONST.STRING_FORMAT.STRING_FORMAT_NUMERIC.ordinal() == formatString) {
             if (!isNumericValue(strValue)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Numeric"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Numeric"));
                 isValid = false;
             }
         } else if (Constants.SERVER_CONST.STRING_FORMAT.STRING_FORMAT_ALPHANUMERIC.ordinal() == formatString) {
         } else if (Constants.SERVER_CONST.STRING_FORMAT.STRING_FORMAT_EMAIL.ordinal() == formatString) {
             if (!isValidEmailId(strValue)) {
-                TSGHttpUtility.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Email"));
+                TSGServiceManager.ERROR_LOGGER.getParamObject(isBodyParameter).addErrInvalid(keyName, String.format(Error.ERR_KEYNAME_WRONG_STRING_FORMAT_TYPE, "Email"));
                 isValid = false;
             }
         }

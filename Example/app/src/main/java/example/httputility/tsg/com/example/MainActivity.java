@@ -19,9 +19,10 @@ import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.*;
 import httputility.tsg.com.tsghttpcontroller.HttpResponse;
-import httputility.tsg.com.tsghttpcontroller.HttpUtils;
+import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
+import httputility.tsg.com.tsghttpcontroller.ServiceManager;
 
-public class MainActivity extends Activity implements View.OnClickListener, HttpUtils.RequestCallBackWithProgress {
+public class MainActivity extends Activity implements View.OnClickListener, ServiceManager.RequestCallBackWithProgress {
 
     private static final int RESULT_LOAD_IMG = 0;
     private final static String REQ_ID_GET = "mainActivity_req_get";
@@ -32,8 +33,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Http
     private final static String REQ_ID_DELETE = "mainActivity_req_delete";
 
 
-    private Button btnInitDB, btnGetReq, btnPostReq, btnUploadFile, btnDownloadFile, btnCancelAll, btnPut, btnDelete;
-    private Button btnGetReqCancel, btnPostReqCancel, btnUploadReqCancel, btnDownloadReqCancel, btnPutReqCancel, btnDeleteReqCancel;
+    private Button btnInitDB;
     private LinearLayout optionsLayout;
     private ContentLoadingProgressBar downloadProgressBar, uploadProgressBar;
 
@@ -42,42 +42,29 @@ public class MainActivity extends Activity implements View.OnClickListener, Http
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-
         btnInitDB = (Button) findViewById(R.id.btnInitDb);
-        btnGetReq = (Button) findViewById(R.id.btnGetReq);
-        btnPostReq = (Button) findViewById(R.id.btnPostReq);
-        btnUploadFile = (Button) findViewById(R.id.btnUploadImg);
-        btnDownloadFile = (Button) findViewById(R.id.btnDownloadImg);
-        btnPut = (Button) findViewById(R.id.btnPut);
-        btnDelete = (Button) findViewById(R.id.btnDelete);
-        btnCancelAll = (Button) findViewById(R.id.btnExtra);
         optionsLayout = (LinearLayout) findViewById(R.id.options_layout);
-
-        btnGetReqCancel = (Button) findViewById(R.id.btnGetReqCancel);
-        btnPostReqCancel = (Button) findViewById(R.id.btnPostReqCancel);
-        btnUploadReqCancel = (Button) findViewById(R.id.btnUploadReqCancel);
-        btnDownloadReqCancel = (Button) findViewById(R.id.btnDownloadReqCancel);
-        btnPutReqCancel = (Button) findViewById(R.id.btnPutReqCancel);
-        btnDeleteReqCancel = (Button) findViewById(R.id.btnDeleteReqCancel);
 
         downloadProgressBar = (ContentLoadingProgressBar) findViewById(R.id.downloadProgress);
         uploadProgressBar = (ContentLoadingProgressBar) findViewById(R.id.uploadProgress);
 
-        btnInitDB.setOnClickListener(this);
-        btnGetReq.setOnClickListener(this);
-        btnPostReq.setOnClickListener(this);
-        btnUploadFile.setOnClickListener(this);
-        btnDownloadFile.setOnClickListener(this);
-        btnPut.setOnClickListener(this);
-        btnDelete.setOnClickListener(this);
-        btnCancelAll.setOnClickListener(this);
+        findViewById(R.id.btnInitDb).setOnClickListener(this);
+        findViewById(R.id.btnGetReq).setOnClickListener(this);
+        findViewById(R.id.btnPostReq).setOnClickListener(this);
+        findViewById(R.id.btnUploadImg).setOnClickListener(this);
+        findViewById(R.id.btnDownloadImg).setOnClickListener(this);
+        findViewById(R.id.btnPut).setOnClickListener(this);
+        findViewById(R.id.btnDelete).setOnClickListener(this);
+        findViewById(R.id.btnPathParameter).setOnClickListener(this);
+        findViewById(R.id.btnCancelAll).setOnClickListener(this);
 
-        btnGetReqCancel.setOnClickListener(this);
-        btnPostReqCancel.setOnClickListener(this);
-        btnUploadReqCancel.setOnClickListener(this);
-        btnDownloadReqCancel.setOnClickListener(this);
-        btnPutReqCancel.setOnClickListener(this);
-        btnDeleteReqCancel.setOnClickListener(this);
+        findViewById(R.id.btnGetReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnPostReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnUploadReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnDownloadReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnPutReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnDeleteReqCancel).setOnClickListener(this);
+        findViewById(R.id.btnPathParamReqCancel).setOnClickListener(this);
     }
 
     @Override
@@ -103,13 +90,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Http
     }
 
     private void uploadImage(String imgDecodableString) {
-        HashMap body = new HashMap();
+        RequestBodyParams body = new RequestBodyParams();
         body.put("name", "Ashish");
         body.put("user_email", "Ashish@kiwitech.com");
         body.put("age", "23");
         body.put("avatar", imgDecodableString);
 
-        TSGHttpUtility.enqueMultipartFileUploadRequest(this, Constants.API_IMAGE_UPLOAD, null, body, this);
+        TSGServiceManager.enqueMultipartFileUploadRequest(this, Constants.API_IMAGE_UPLOAD, null, body, this);
 
         uploadProgressBar.show();
         uploadProgressBar.setProgress(0);
@@ -117,54 +104,77 @@ public class MainActivity extends Activity implements View.OnClickListener, Http
 
     @Override
     public void onClick(View view) {
-        if (view == btnInitDB) {
-            TSGAPIController.init(getApplicationContext(), TSGAPIController.BUILD_FLAVOR.DEVELOPMENT);
-            btnInitDB.setVisibility(View.GONE);
-            optionsLayout.setVisibility(View.VISIBLE);
-        } else if (view == btnGetReq) {
-                TSGHttpUtility.enqueRequest(MainActivity.this, Constants.API_GET_All_PROJECT, null, this);
-        } else if (view == btnPostReq) {
-            HashMap<String, String> paramMap = new HashMap<String, String>();
-            paramMap.put("name", "Ashish");
-            paramMap.put("user_email", "ashish@kiwitech.com");
-            TSGHttpUtility.enqueRequest(this, Constants.API_CREATE_PROJECT, null, paramMap, MainActivity.this);
-        } else if (view == btnUploadFile) {
-            Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
-        } else if (view == btnDownloadFile) {
-            HttpUtils.FileDownloadRequestBuilder builder = new HttpUtils.FileDownloadRequestBuilder();
-            builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
-            builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
-            builder.setRequestId(REQ_ID_DOWNLOAD);
-            HttpUtils httpUtils = builder.build();
-            httpUtils.enqueFileRequestWithProgress(this);
-            downloadProgressBar.show();
-            downloadProgressBar.setProgress(0);
-        } else if (view == btnPut) {
-            HashMap<String, String> paramMap = new HashMap<String, String>();
-            paramMap.put("project_id", "13");
-            paramMap.put("name", "Ashish");
-            paramMap.put("user_email", "ashish@kiwitech.com");
-            paramMap.put("age", "24");
-            TSGHttpUtility.enqueRequest(this, Constants.API_UPDATE_PROJECT, null, paramMap, MainActivity.this);
-        } else if (view == btnDelete) {
-            HashMap<String, String> paramMap = new HashMap<String, String>();
-            paramMap.put("project_id", "13");
-            TSGHttpUtility.enqueRequest(this, Constants.API_DELETE_PROJECT, null, paramMap, MainActivity.this);
-        } else if (view == btnGetReqCancel) {
-            TSGHttpUtility.cancelReqeust(Constants.API_GET_All_PROJECT);
-        } else if (view == btnPostReqCancel) {
-            TSGHttpUtility.cancelReqeust(Constants.API_CREATE_PROJECT);
-        } else if (view == btnUploadReqCancel) {
-            TSGHttpUtility.cancelReqeust(Constants.API_IMAGE_UPLOAD);
-        } else if (view == btnDownloadReqCancel) {
-            TSGHttpUtility.cancelReqeust(REQ_ID_DOWNLOAD);
-        } else if (view == btnPutReqCancel) {
-            TSGHttpUtility.cancelReqeust(Constants.API_UPDATE_PROJECT);
-        } else if (view == btnDeleteReqCancel) {
-            TSGHttpUtility.cancelReqeust(Constants.API_DELETE_PROJECT);
-        } else if (view == btnCancelAll) {
-            TSGHttpUtility.cancelAllReqeust();
+        switch (view.getId()) {
+            case R.id.btnInitDb:
+                TSGAPIController.init(getApplicationContext(), TSGAPIController.BUILD_FLAVOR.DEVELOPMENT);
+                btnInitDB.setVisibility(View.GONE);
+                optionsLayout.setVisibility(View.VISIBLE);
+                break;
+            case R.id.btnGetReq:
+                TSGServiceManager.enqueRequest(MainActivity.this, Constants.API_GET_All_PROJECT, null, this);
+                break;
+            case R.id.btnPostReq:
+                RequestBodyParams paramMap = new RequestBodyParams();
+                paramMap.put("name", "Ashish");
+                paramMap.put("user_email", "ashish@kiwitech.com");
+                TSGServiceManager.enqueRequest(this, Constants.API_CREATE_PROJECT, null, paramMap, MainActivity.this);
+                break;
+            case R.id.btnUploadImg:
+                Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
+                break;
+            case R.id.btnDownloadImg:
+                ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();
+                builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
+                builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+                builder.setRequestId(REQ_ID_DOWNLOAD);
+                ServiceManager httpUtils = builder.build();
+                httpUtils.enqueFileRequestWithProgress(this);
+                downloadProgressBar.show();
+                downloadProgressBar.setProgress(0);
+                break;
+            case R.id.btnPut:
+                RequestBodyParams paramMapPutReq = new RequestBodyParams();
+                paramMapPutReq.put("project_id", "11");
+                paramMapPutReq.put("name", "Ashish");
+                paramMapPutReq.put("user_email", "ashish@kiwitech.com");
+                paramMapPutReq.put("age", "24");
+                TSGServiceManager.enqueRequest(this, Constants.API_UPDATE_PROJECT, null, paramMapPutReq, MainActivity.this);
+                break;
+            case R.id.btnDelete:
+                RequestBodyParams paramMapDeleteReq = new RequestBodyParams();
+                paramMapDeleteReq.put("project_id", "11");
+                TSGServiceManager.enqueRequest(this, Constants.API_DELETE_PROJECT, null, paramMapDeleteReq, MainActivity.this);
+                break;
+            case R.id.btnPathParameter:
+                HashMap<String, String> map = new HashMap<>();
+                map.put("user-id", "12");
+                TSGServiceManager.enqueRequest(this, Constants.API_PATH_PARAM_REQUEST, map, null, null, MainActivity.this);
+                break;
+            case R.id.btnCancelAll:
+                TSGServiceManager.cancelAllReqeust();
+                break;
+            case R.id.btnGetReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_GET_All_PROJECT);
+                break;
+            case R.id.btnPostReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_CREATE_PROJECT);
+                break;
+            case R.id.btnUploadReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_IMAGE_UPLOAD);
+                break;
+            case R.id.btnDownloadReqCancel:
+                TSGServiceManager.cancelReqeust(REQ_ID_DOWNLOAD);
+                break;
+            case R.id.btnPutReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_UPDATE_PROJECT);
+                break;
+            case R.id.btnDeleteReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_DELETE_PROJECT);
+                break;
+            case R.id.btnPathParamReqCancel:
+                TSGServiceManager.cancelReqeust(Constants.API_PATH_PARAM_REQUEST);
+                break;
         }
     }
 
