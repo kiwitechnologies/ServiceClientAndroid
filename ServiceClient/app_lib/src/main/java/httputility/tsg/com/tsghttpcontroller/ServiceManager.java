@@ -10,6 +10,7 @@
 
 package httputility.tsg.com.tsghttpcontroller;
 
+import android.content.Context;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -17,6 +18,7 @@ import android.support.annotation.WorkerThread;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -27,6 +29,8 @@ public final class ServiceManager {
     private static String BASE_URL;
     private static HttpRequestExecutor httpRequestExecutor = new HttpRequestExecutor();
     private final HashMap<String, String> path_parameter;
+    private final boolean executeSequentially;
+    private Context context; // Only available incase of sequential execution
 
     private HttpConstants.HTTPRequestType HTTPRequestType;
     private String requestId;
@@ -38,12 +42,9 @@ public final class ServiceManager {
     private HashSet<String> multipartKeyNamesSet;
     private HttpConstants.IMAGE_QUALITY image_quality;
     private long requestTime;
+    private boolean executeOnPriority = false;
 
-    private ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params) {
-        this(httpRequestType, requestId, subURL, path_parameter, headers, query_params, body_params, null);
-    }
-
-    public ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, @Nullable String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params, String downloadFilePath) {
+    private ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params, boolean executeSequentially) {
         this.HTTPRequestType = httpRequestType;
         this.requestId = requestId;
         this.subURL = subURL;
@@ -51,7 +52,7 @@ public final class ServiceManager {
         this.headers = headers;
         this.query_params = query_params;
         this.body_params = body_params;
-        this.downloadFilePath = downloadFilePath;
+        this.executeSequentially = executeSequentially;
 
         if (this.subURL == null || "".equals(subURL)) {
             throw new IllegalArgumentException("Invalid URL");
@@ -60,6 +61,11 @@ public final class ServiceManager {
 
     public static void init(String baseURL) {
         BASE_URL = baseURL;
+    }
+
+
+    public Context getContext() {
+        return context;
     }
 
     /**
@@ -82,11 +88,11 @@ public final class ServiceManager {
     @MainThread
     public void enqueRequest(RequestCallBack requestCallBack) {
         requestTime = System.currentTimeMillis();
-        httpRequestExecutor.enqueRequest(this, requestCallBack);
+        httpRequestExecutor.enqueParallelRequest(this, requestCallBack);
     }
 
     /**
-     * Call this method in case you want to do a multipart request
+     * Call this method in case you want to show progress of your request
      *
      * @param requestCallBackWithProgress instance of {@link RequestCallBackWithProgress} to track progress
      */
@@ -96,7 +102,7 @@ public final class ServiceManager {
     }
 
     /**
-     * Call this method in case you want to do a multipart request
+     * Call this method in case you want to show progress of your request
      *
      * @param multipartKeyNamesSet        instance of {@link HashSet}, it should have all the body parameter name in which there is a file to upload.
      * @param requestCallBackWithProgress instance of {@link RequestCallBackWithProgress} to track progress
@@ -106,7 +112,11 @@ public final class ServiceManager {
         requestTime = System.currentTimeMillis();
         this.multipartKeyNamesSet = multipartKeyNamesSet;
         this.image_quality = image_quality;
-        httpRequestExecutor.enqueRequest(this, requestCallBackWithProgress);
+        if (executeSequentially) {
+            httpRequestExecutor.enqueSequentialRequest(this, requestCallBackWithProgress);
+        } else {
+            httpRequestExecutor.enqueParallelRequest(this, requestCallBackWithProgress);
+        }
     }
 
     public String getRequestedURL() {
@@ -165,24 +175,41 @@ public final class ServiceManager {
         return image_quality;
     }
 
+    void setDownloadFilePath(String downloadFilePath) {
+        this.downloadFilePath = downloadFilePath;
+    }
+
+    public void setContext(Context context, boolean executeOnPriority) {
+        this.context = context;
+        this.executeOnPriority = executeOnPriority;
+    }
+
+    public boolean isExecuteOnPriority() {
+        return executeOnPriority;
+    }
+
+    boolean isDonwloadFileRequest() {
+        return (downloadFilePath != null && !downloadFilePath.equals(""));
+    }
+
     /**
      * RequestCallBack It listen you back the response
      */
-    public interface RequestCallBack {
-
-        void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse);
+    public interface RequestCallBack extends Serializable {
 
         void onSuccess(String requestId, HttpResponse response);
+
+        void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse);
 
         void onFinish(String requestId);
     }
 
-    public interface RequestCallBackWithProgress extends CountingFileRequestBody.ProgressListener, RequestCallBack {
+    public interface RequestCallBackWithProgress extends CountingFileRequestBody.ProgressListener, RequestCallBack, Serializable {
     }
 
     public static abstract class RequestBuilder {
 
-        String requestId;
+        private String requestId;
         String subURL = "";
 
         HashMap<String, String> headers;
@@ -210,12 +237,37 @@ public final class ServiceManager {
         public void setPathParameters(HashMap<String, String> path_params) {
             this.pathParameters = path_params;
         }
+
+        String getRequestId() {
+            return (requestId == null || requestId.equals("")) ? "0" : requestId;
+        }
+    }
+
+    static abstract class SequentialRequestBuilder extends RequestBuilder {
+        boolean downloadSequentially;
+        Context context;
+        boolean executeOnPriority = false;
+
+
+        public void setDownloadSequentially(Context context) {
+            this.context = context;
+            downloadSequentially = true;
+        }
+
+        public void setDownloadParallaly() {
+            downloadSequentially = false;
+        }
+
+        public void setExecuteOnPriority() {
+            executeOnPriority = true;
+        }
+
     }
 
     public static class GetRequestBuilder extends RequestBuilder {
 
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.GET, requestId, subURL, pathParameters, headers, queryParameters, null);
+            return new ServiceManager(HttpConstants.HTTPRequestType.GET, getRequestId(), subURL, pathParameters, headers, queryParameters, null, false);
         }
     }
 
@@ -228,7 +280,7 @@ public final class ServiceManager {
         }
 
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.POST, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
+            return new ServiceManager(HttpConstants.HTTPRequestType.POST, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, false);
         }
     }
 
@@ -241,7 +293,7 @@ public final class ServiceManager {
         }
 
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.PUT, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
+            return new ServiceManager(HttpConstants.HTTPRequestType.PUT, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, false);
         }
     }
 
@@ -254,11 +306,11 @@ public final class ServiceManager {
         }
 
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.DELETE, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
+            return new ServiceManager(HttpConstants.HTTPRequestType.DELETE, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, false);
         }
     }
 
-    public static class FileUploadRequestBuilder extends RequestBuilder {
+    public static class FileUploadRequestBuilder extends SequentialRequestBuilder {
 
         private RequestBodyParams requestBody;
 
@@ -267,12 +319,34 @@ public final class ServiceManager {
         }
 
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.UPLOAD_FILE, requestId, subURL, pathParameters, headers, queryParameters, requestBody);
+            ServiceManager serviceManager = new ServiceManager(HttpConstants.HTTPRequestType.UPLOAD_FILE, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, downloadSequentially);
+            if (downloadSequentially) {
+                serviceManager.setContext(context, executeOnPriority);
+            }
+
+            return serviceManager;
         }
     }
 
-    public static class FileDownloadRequestBuilder extends GetRequestBuilder {
+    public static class FileDownloadRequestBuilder extends SequentialRequestBuilder {
+        private HttpConstants.HTTPRequestType requestType = HttpConstants.HTTPRequestType.GET;
+        private RequestBodyParams requestBody;
         private String filePath;
+
+
+        public FileDownloadRequestBuilder() {
+        }
+
+        public FileDownloadRequestBuilder(HttpConstants.HTTPRequestType requestType) {
+            this.requestType = requestType;
+            if (requestType == HttpConstants.HTTPRequestType.UPLOAD_FILE) {
+                throw new IllegalArgumentException("Invalid request type. Supported request types are : GET, POST, PUT, DELETE");
+            }
+        }
+
+        public void setRequestBody(@Nullable RequestBodyParams requestBody) {
+            this.requestBody = requestBody;
+        }
 
         public void setFilePath(@NonNull String filePath) {
             this.filePath = filePath;
@@ -284,7 +358,12 @@ public final class ServiceManager {
 
         @Override
         public ServiceManager build() {
-            return new ServiceManager(HttpConstants.HTTPRequestType.DOWNLOAD_FILE, requestId, subURL, pathParameters, headers, queryParameters, null, filePath);
+            ServiceManager serviceManager = new ServiceManager(requestType, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, downloadSequentially);
+            serviceManager.setDownloadFilePath(filePath);
+            if (downloadSequentially) {
+                serviceManager.setContext(context, executeOnPriority);
+            }
+            return serviceManager;
         }
     }
 

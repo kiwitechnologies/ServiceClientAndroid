@@ -12,6 +12,8 @@ package httputility.tsg.com.tsghttpcontroller;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.SocketException;
 
 import okhttp3.Call;
@@ -28,20 +31,16 @@ import okhttp3.Response;
 /**
  * Created by kiwitech on 11/04/16.
  */
-class HttpRequestCallBack implements Callback {
+class HttpRequestCallBack implements Callback, Serializable {
 
     private ServiceManager.RequestCallBack requestCallBack;
     private String requestId;
-    private HttpConstants.HTTPRequestType requestType;
     private String downloadFilePath;
-    private Handler handler;
     private long requestTime;
 
     public HttpRequestCallBack(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
-        handler = new Handler(Looper.getMainLooper());
         this.requestCallBack = requestCallBack;
         this.requestId = serviceManager.getRequestId();
-        this.requestType = serviceManager.getHTTPRequestType();
         this.downloadFilePath = serviceManager.getDownloadFilePath();
         this.requestTime = serviceManager.getRequestTime();
     }
@@ -52,7 +51,7 @@ class HttpRequestCallBack implements Callback {
      */
     @Override
     public final void onFailure(Call call, final IOException e) {
-        handler.post(new Runnable() {
+        getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 requestCallBack.onFailure(requestId, e, null);
@@ -75,11 +74,11 @@ class HttpRequestCallBack implements Callback {
             HttpRequestExecutor.removeRequestIdFromRequestInfo(requestId, requestTime);
             return;
         }
-        if (requestType == HttpConstants.HTTPRequestType.DOWNLOAD_FILE) {
+        if (downloadFilePath != null && !downloadFilePath.equals("")) {
             donwloadFile(call, response);
         } else {
             final HttpResponse httpResponse = new HttpResponse(response);
-            handler.post(new Runnable() {
+            getUiHandler().post(new Runnable() {
                 @Override
                 public void run() {
                     requestCallBack.onSuccess(requestId, httpResponse);
@@ -141,7 +140,7 @@ class HttpRequestCallBack implements Callback {
 
     private void postProgresCallbackMsg(final String requestId, final String fileName, final long downloaded, final long contentLength) {
         if (requestCallBack != null && requestCallBack instanceof ServiceManager.RequestCallBackWithProgress) {
-            handler.post(new Runnable() {
+            getUiHandler().post(new Runnable() {
                 @Override
                 public void run() {
                     ((ServiceManager.RequestCallBackWithProgress) requestCallBack).inProgress(requestId, fileName, downloaded, contentLength);
@@ -151,7 +150,7 @@ class HttpRequestCallBack implements Callback {
     }
 
     private void postSuccessCallbackMsg(final String requestId, final HttpResponse response) {
-        handler.post(new Runnable() {
+        getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 requestCallBack.onSuccess(requestId, response);
@@ -160,7 +159,7 @@ class HttpRequestCallBack implements Callback {
     }
 
     private void postFailedCallbackMsg(final String requestId, final Throwable throwable, final Response response) {
-        handler.post(new Runnable() {
+        getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 requestCallBack.onFailure(requestId, throwable, (response == null) ? null : new HttpResponse(response));
@@ -169,11 +168,16 @@ class HttpRequestCallBack implements Callback {
     }
 
     private void postFinishCallback(final String requestId) {
-        handler.post(new Runnable() {
+        getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 requestCallBack.onFinish(requestId);
             }
         });
     }
+
+    private Handler getUiHandler() {
+        return new Handler(Looper.getMainLooper());
+    }
+
 }

@@ -10,6 +10,9 @@
 
 package httputility.tsg.com.tsghttpcontroller;
 
+import android.content.Intent;
+import android.os.Bundle;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,19 +40,18 @@ public final class HttpRequestExecutor {
         httpClient = builder.build();
     }
 
-    private static ConcurrentHashMap<String, ArrayList<CallWrapper>> requestInfo = new ConcurrentHashMap<>();
+    static volatile ConcurrentHashMap<String, ArrayList<CallWrapper>> requestInfo = new ConcurrentHashMap<>();
 
     public Response execute(ServiceManager serviceManager) throws IOException {
-        Response response = null;
         Request request = HttpRequestFactory.getRequest(serviceManager, null);
-        response = httpClient.newCall(request).execute();
+        Response response = httpClient.newCall(request).execute();
         if (!response.isSuccessful()) {
             throw new IOException("Unexpected code " + response);
         }
         return response;
     }
 
-    public void enqueRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
+    public void enqueParallelRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
         Request request = null;
 
         try {
@@ -68,6 +70,44 @@ public final class HttpRequestExecutor {
         call.enqueue(httpRequestCallBack);
     }
 
+
+    public void enqueSequentialRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
+        Request request = null;
+
+        try {
+            request = HttpRequestFactory.getRequest(serviceManager, requestCallBack);
+        } catch (Exception e) {
+            requestCallBack.onFailure(serviceManager.getRequestId(), e, null);
+            requestCallBack.onFinish(serviceManager.getRequestId());
+            return;
+        }
+
+        HttpRequestCallBack httpRequestCallBack = new HttpRequestCallBack(serviceManager, requestCallBack);
+        Call call = httpClient.newCall(request);
+        addCallInMap(serviceManager.getRequestId(), new CallWrapper(serviceManager.getRequestTime(), call));
+
+
+        Bundle bundle = new Bundle();
+        bundle.putString(Constants.EXTRA_REQUEST_ID, serviceManager.getRequestId());
+        bundle.putLong(Constants.EXTRA_REQUEST_TIME, serviceManager.getRequestTime());
+        bundle.putBoolean(Constants.EXTRA_EXECUTE_ON_PRIORITY, serviceManager.isExecuteOnPriority());
+        bundle.putSerializable(Constants.EXTRA_REQUEST_RECEIVER, httpRequestCallBack);
+
+        Intent intent = null;
+        if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.UPLOAD_FILE) {
+            intent = new Intent(serviceManager.getContext(), SequentialUploadRequestExecutorService.class);
+            SequentialUploadRequestExecutorService.addRequest(bundle);
+        } else if (serviceManager.isDonwloadFileRequest()) {
+            intent = new Intent(serviceManager.getContext(), SequentialDownloadRequestExecutorService.class);
+            SequentialDownloadRequestExecutorService.addRequest(bundle);
+        }
+
+
+        serviceManager.getContext().startService(intent);
+
+    }
+
+
     private synchronized void addCallInMap(String requestId, CallWrapper call) {
         ArrayList<CallWrapper> callsList = requestInfo.get(requestId);
         if (callsList == null) {
@@ -77,6 +117,11 @@ public final class HttpRequestExecutor {
         requestInfo.put(requestId, callsList);
     }
 
+    /**
+     * It will cancel all the request that are pending or being executing
+     *
+     * @return
+     */
     public synchronized static boolean cancelAllReqeust() {
         Iterator<String> requestIdIterator = requestInfo.keySet().iterator();
         while (requestIdIterator.hasNext()) {
@@ -111,24 +156,23 @@ public final class HttpRequestExecutor {
      *
      * @param requestId
      * @param requestTime
-     * @return
+     * @return public synchronized static boolean cancelReqeust(String requestId, long requestTime) {
+     * ArrayList<CallWrapper> callWrapperList = requestInfo.get(requestId);
+     * try {
+     * for (int i = 0; callWrapperList != null && i < callWrapperList.size(); i++) {
+     * CallWrapper callWrapper = callWrapperList.get(i);
+     * if (callWrapper.getRequestTime() == requestTime) {
+     * callWrapperList.remove(i);
+     * callWrapper.cancel();
+     * requestInfo.put(requestId, callWrapperList);
+     * return true;
+     * }
+     * }
+     * } catch (Exception e) {
+     * }
+     * return false;
+     * }
      */
-    public synchronized static boolean cancelReqeust(String requestId, long requestTime) {
-        ArrayList<CallWrapper> callWrapperList = requestInfo.get(requestId);
-        try {
-            for (int i = 0; callWrapperList != null && i < callWrapperList.size(); i++) {
-                CallWrapper callWrapper = callWrapperList.get(i);
-                if (callWrapper.getRequestTime() == requestTime) {
-                    callWrapperList.remove(i);
-                    callWrapper.cancel();
-                    requestInfo.put(requestId, callWrapperList);
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-        }
-        return false;
-    }
 
     static synchronized void removeRequestIdFromRequestInfo(String requestId, long requestTime) {
         if (requestId == null) {
@@ -141,7 +185,11 @@ public final class HttpRequestExecutor {
                 CallWrapper callWrapper = callWrapperList.get(i);
                 if (callWrapper.getRequestTime() == requestTime) {
                     callWrapperList.remove(i);
-                    requestInfo.put(requestId, callWrapperList);
+                    if (callWrapperList.size() == 0) {
+                        requestInfo.remove(requestId);
+                    } else {
+                        requestInfo.put(requestId, callWrapperList);
+                    }
                     break;
                 }
             }

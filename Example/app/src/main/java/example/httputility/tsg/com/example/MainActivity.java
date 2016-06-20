@@ -25,12 +25,7 @@ import httputility.tsg.com.tsghttpcontroller.ServiceManager;
 public class MainActivity extends Activity implements View.OnClickListener, ServiceManager.RequestCallBackWithProgress {
 
     private static final int RESULT_LOAD_IMG = 0;
-    private final static String REQ_ID_GET = "mainActivity_req_get";
-    private final static String REQ_ID_POST = "mainActivity_req_post";
-    private final static String REQ_ID_UPLOAD = "mainActivity_req_upload";
     private final static String REQ_ID_DOWNLOAD = "mainActivity_req_download";
-    private final static String REQ_ID_PUT = "mainActivity_req_put";
-    private final static String REQ_ID_DELETE = "mainActivity_req_delete";
 
 
     private Button btnInitDB;
@@ -117,7 +112,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
                 RequestBodyParams paramMap = new RequestBodyParams();
                 paramMap.put("name", "Ashish");
                 paramMap.put("user_email", "ashish@kiwitech.com");
-                TSGServiceManager.enqueRequest(this, Constants.API_CREATE_PROJECT, null, paramMap, MainActivity.this);
+                TSGServiceManager.enqueRequest(this, Constants.API_CREATE_PROJECT, null, paramMap, this);
                 break;
             case R.id.btnUploadImg:
                 Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -139,17 +134,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
                 paramMapPutReq.put("name", "Ashish");
                 paramMapPutReq.put("user_email", "ashish@kiwitech.com");
                 paramMapPutReq.put("age", "24");
-                TSGServiceManager.enqueRequest(this, Constants.API_UPDATE_PROJECT, null, paramMapPutReq, MainActivity.this);
+                TSGServiceManager.enqueRequest(this, Constants.API_UPDATE_PROJECT, null, paramMapPutReq, this);
                 break;
             case R.id.btnDelete:
                 RequestBodyParams paramMapDeleteReq = new RequestBodyParams();
                 paramMapDeleteReq.put("project_id", "11");
                 TSGServiceManager.enqueRequest(this, Constants.API_DELETE_PROJECT, null, paramMapDeleteReq, MainActivity.this);
+
                 break;
             case R.id.btnPathParameter:
                 HashMap<String, String> map = new HashMap<>();
                 map.put("user-id", "12");
-                TSGServiceManager.enqueRequest(this, Constants.API_PATH_PARAM_REQUEST, map, null, null, MainActivity.this);
+                TSGServiceManager.enqueRequest(this, Constants.API_PATH_PARAM_REQUEST, map, null, null, this);
                 break;
             case R.id.btnCancelAll:
                 TSGServiceManager.cancelAllReqeust();
@@ -178,43 +174,117 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
         }
     }
 
-    @SuppressLint("LongLogTag")
-    @Override
-    public void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse) {
-        if (throwable != null) {
-            Toast.makeText(this, "Respoonse failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Respoonse failed: " + errorResponse.getCode() + " " + errorResponse.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-
-        if (requestId == REQ_ID_DOWNLOAD) {
-            downloadProgressBar.setProgress(0);
-        } else if (requestId == REQ_ID_UPLOAD) {
-            uploadProgressBar.setProgress(0);
-        }
-    }
 
     @SuppressLint("LongLogTag")
     @Override
     public void onSuccess(String requestId, HttpResponse response) {
-        Toast.makeText(this, "Respoonse successful", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "Respoonse successful", Toast.LENGTH_SHORT).show();
+    }
+
+    @SuppressLint("LongLogTag")
+    @Override
+    public void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse) {
+        if (throwable != null) {
+            Toast.makeText(MainActivity.this, "Respoonse failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MainActivity.this, "Respoonse failed: " + errorResponse.getCode() + " " + errorResponse.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        if (requestId.equals(REQ_ID_DOWNLOAD)) {
+            downloadProgressBar.setProgress(0);
+        } else if (requestId.equals(Constants.API_IMAGE_UPLOAD)) {
+            uploadProgressBar.setProgress(0);
+        }
     }
 
     @Override
     public void onFinish(String requestId) {
-        Toast.makeText(this, "Request finished", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "Request finished", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void inProgress(String requestId, String fileName, long num, long totalSize) {
-        Log.d(MainActivity.class.getName(), "Request id: " + requestId + " ,fileName: " + fileName + " ,inProgress: " + num + " ,totalSize: " + totalSize);
+        Log.d("log", "Request id: " + requestId + " ,fileName: " + fileName + " ,inProgress: " + num + " ,totalSize: " + totalSize);
         int progress = (int) ((num * 100) / totalSize);
-        if (requestId == REQ_ID_DOWNLOAD) {
+        if (requestId.equals(REQ_ID_DOWNLOAD)) {
             downloadProgressBar.show();
             downloadProgressBar.setProgress(progress);
-        } else if (requestId == REQ_ID_UPLOAD) {
+        } else if (requestId.equals(Constants.API_IMAGE_UPLOAD)) {
             uploadProgressBar.show();
             uploadProgressBar.setProgress(progress);
         }
     }
 }
+
+/*
+// Sample code for files downloading
+
+    ================================== SEQUENTIALLY ==================================
+
+        ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();
+        builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
+        builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+        builder.setRequestId("aaaaaa");
+        builder.setDownloadSequentially(context);
+        httpUtils = builder.build();
+        httpUtils.enqueFileRequestWithProgress(requestCallBackWithProgress);
+
+
+        builder = new ServiceManager.FileDownloadRequestBuilder();
+        builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash2.pdf");
+        builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+        builder.setRequestId("bbbbbb");
+        builder.setDownloadSequentially(context);
+        httpUtils = builder.build();
+        httpUtils.enqueFileRequestWithProgress(requestCallBackWithProgress);
+
+
+
+        ********************** SET PRIORITY IN SEQUENTIAL MODE *********************
+
+        builder = new ServiceManager.FileDownloadRequestBuilder();
+        builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash3.pdf");
+        builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+        builder.setRequestId("cccccc");
+        builder.setExecuteOnPriority();
+        builder.setDownloadSequentially(this);
+        httpUtils = builder.build();
+        httpUtils.enqueFileRequestWithProgress(requestCallBackWithProgress);
+
+
+
+    ================================== PARALLALY ==================================
+
+
+        ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();
+        builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
+        builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+        builder.setRequestId("aaaaaa");
+        builder.setDownloadSequentially(context);
+        httpUtils = builder.build();
+        httpUtils.enqueFileRequestWithProgress(requestCallBackWithProgress);
+
+
+        builder = new ServiceManager.FileDownloadRequestBuilder();
+        builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash2.pdf");
+        builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
+        builder.setRequestId("bbbbbb");
+        builder.setDownloadSequentially(context);
+        httpUtils = builder.build();
+        httpUtils.enqueFileRequestWithProgress(requestCallBackWithProgress);
+
+
+
+    ================================== CANCELLATION OF REQUEST ==================================
+
+        *********************** CANCEL PERTICULAR REQUEST *******************
+
+        HttpRequestExecutor.cancelAllRequestWith("aaaaaa");
+        HttpRequestExecutor.cancelAllRequestWith("cccccc");
+
+
+        *********************** CANCEL PERTICULAR REQUEST *******************
+
+        HttpRequestExecutor.cancelAllReqeust();
+
+*/

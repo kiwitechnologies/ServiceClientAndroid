@@ -10,6 +10,7 @@
 
 package httputility.tsg.com.tsghttpcontroller;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -22,11 +23,11 @@ public class HttpConstants {
         POST,
         PUT,
         DELETE,
-        DOWNLOAD_FILE,
         UPLOAD_FILE
     }
 
     static HashMap<String, String> MIME_TYPE_MAP = new HashMap<>();
+
     static {
         MIME_TYPE_MAP.put(".mp3", "audio/mpeg3");
         MIME_TYPE_MAP.put(".pdf", "application/pdf");

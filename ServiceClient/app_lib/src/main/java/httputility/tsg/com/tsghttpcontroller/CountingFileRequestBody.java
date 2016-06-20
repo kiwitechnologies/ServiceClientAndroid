@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -31,7 +32,7 @@ import okio.Source;
 /**
  * Created by kiwitech on 10/05/16.
  */
-final class CountingFileRequestBody extends RequestBody {
+final class CountingFileRequestBody extends RequestBody implements Serializable {
 
     private static final int SEGMENT_SIZE = 2048;
 
@@ -122,7 +123,7 @@ final class CountingFileRequestBody extends RequestBody {
         return false;
     }
 
-    public interface ProgressListener {
+    public interface ProgressListener extends Serializable {
         void inProgress(String requestId, String fileName, long num, long totalSize);
     }
 

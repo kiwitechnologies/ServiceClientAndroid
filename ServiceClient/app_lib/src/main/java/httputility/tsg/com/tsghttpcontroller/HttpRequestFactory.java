@@ -49,8 +49,6 @@ public class HttpRequestFactory {
             return new HttpRequestFactory(serviceManager, requestCallBack).createPutRequest();
         } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.DELETE) {
             return new HttpRequestFactory(serviceManager, requestCallBack).createDeleteRequest();
-        } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.DOWNLOAD_FILE) {
-            return new HttpRequestFactory(serviceManager, requestCallBack).createGetRequest();
         } else if (serviceManager.getHTTPRequestType() == HttpConstants.HTTPRequestType.UPLOAD_FILE) {
             return new HttpRequestFactory(serviceManager, requestCallBack).createPostMultipartFileRequest();
         }

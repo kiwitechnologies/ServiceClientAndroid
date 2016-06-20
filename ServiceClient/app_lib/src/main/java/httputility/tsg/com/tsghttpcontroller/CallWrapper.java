@@ -25,6 +25,10 @@ final class CallWrapper {
     }
 
     public void cancel() {
-        call.cancel();
+        try {
+            call.cancel();
+        } catch (Exception e) {
+        }
+
     }
 }
