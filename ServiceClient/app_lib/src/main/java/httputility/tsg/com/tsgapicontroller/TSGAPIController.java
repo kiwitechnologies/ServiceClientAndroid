@@ -13,17 +13,21 @@ package httputility.tsg.com.tsgapicontroller;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.util.HashMap;
+
 import static httputility.tsg.com.tsgapicontroller.TSGAPIController.SharedPrefConstants.KEY_BUILD_FLAVOR;
+import static httputility.tsg.com.tsgapicontroller.TSGAPIController.SharedPrefConstants.KEY_DUMMY_RESPONSE_CODE;
 
 /**
  * Created by kiwitech on 03/05/16.
  */
 public final class TSGAPIController {
 
-    private Context mContext;
-
     private TSGAPIController(Context context, BUILD_FLAVOR buildFlavor) {
-        this.mContext = context;
+        TSGAPIController.setBuildFlavor(context, buildFlavor);
+    }
+
+    public static void setBuildFlavor(Context context, BUILD_FLAVOR buildFlavor) {
         BUILD_FLAVOR.saveBuildFlavor(context, buildFlavor);
     }
 
@@ -33,11 +37,22 @@ public final class TSGAPIController {
 
     public static void init(Context context, BUILD_FLAVOR buildFlavor) {
         TSGAPIController tsgapiController = new TSGAPIController(context, buildFlavor);
-        tsgapiController.updateDB(buildFlavor);
+        tsgapiController.updateDB(context, buildFlavor);
     }
 
-    public void updateDB(BUILD_FLAVOR buildFlavor) {
-        DBUpdateTask dbUpdateTask = new DBUpdateTask(mContext, buildFlavor);
+    public static void setDummyServerResponseCode(Context context, int responseCode) {
+        SharedPreferences.Editor editor = context.getSharedPreferences(TSGAPIController.SharedPrefConstants.SHARED_PREF_FILE_NAME, Context.MODE_PRIVATE).edit();
+        editor.putInt(KEY_DUMMY_RESPONSE_CODE, responseCode);
+        editor.commit();
+    }
+
+    static int getDummyServerResponseCode(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(TSGAPIController.SharedPrefConstants.SHARED_PREF_FILE_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getInt(KEY_DUMMY_RESPONSE_CODE, 200);
+    }
+
+    public void updateDB(Context context, BUILD_FLAVOR buildFlavor) {
+        DBUpdateTask dbUpdateTask = new DBUpdateTask(context, buildFlavor);
         dbUpdateTask.execute();
     }
 
@@ -79,6 +94,7 @@ public final class TSGAPIController {
         String KEY_UPDATEDAT = "key_updatedat";
         String KEY_APP_VERSION = "key_app_version";
         String KEY_BUILD_FLAVOR = "build_flavor";
+        String KEY_DUMMY_RESPONSE_CODE = "dummy_response_code";
     }
 
 }

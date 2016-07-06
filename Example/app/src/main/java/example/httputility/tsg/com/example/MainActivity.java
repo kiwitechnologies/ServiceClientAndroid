@@ -2,6 +2,7 @@ package example.httputility.tsg.com.example;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Service;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -18,9 +19,12 @@ import android.widget.Toast;
 import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.*;
+import httputility.tsg.com.tsghttpcontroller.HttpConstants;
 import httputility.tsg.com.tsghttpcontroller.HttpResponse;
 import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
 import httputility.tsg.com.tsghttpcontroller.ServiceManager;
+
+import static httputility.tsg.com.tsghttpcontroller.HttpConstants.*;
 
 public class MainActivity extends Activity implements View.OnClickListener, ServiceManager.RequestCallBackWithProgress {
 
@@ -91,7 +95,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
         body.put("age", "23");
         body.put("avatar", imgDecodableString);
 
-        TSGServiceManager.enqueMultipartFileUploadRequest(this, Constants.API_IMAGE_UPLOAD, null, body, this);
+        TSGServiceManager.enqueMultipartFileUploadRequest(this, Constants.API_IMAGE_UPLOAD, null, null, body, IMAGE_QUALITY.DEFALUT, true, this);
 
         uploadProgressBar.show();
         uploadProgressBar.setProgress(0);
@@ -101,11 +105,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btnInitDb:
-                TSGAPIController.init(getApplicationContext(), TSGAPIController.BUILD_FLAVOR.DEVELOPMENT);
+                TSGAPIController.init(getApplicationContext(), TSGAPIController.BUILD_FLAVOR.DUMMY_SERVER);
+                TSGAPIController.setDummyServerResponseCode(this,300);
                 btnInitDB.setVisibility(View.GONE);
                 optionsLayout.setVisibility(View.VISIBLE);
                 break;
             case R.id.btnGetReq:
+                TSGServiceManager.setEnableDebugging(true);
                 TSGServiceManager.enqueRequest(MainActivity.this, Constants.API_GET_All_PROJECT, null, this);
                 break;
             case R.id.btnPostReq:
@@ -143,9 +149,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 
                 break;
             case R.id.btnPathParameter:
-                HashMap<String, String> map = new HashMap<>();
-                map.put("user-id", "12");
-                TSGServiceManager.enqueRequest(this, Constants.API_PATH_PARAM_REQUEST, map, null, null, this);
+                HashMap<String, String> pathParam = new HashMap<>();
+                pathParam.put("version_no", "v1");
+
+                HashMap<String, String> queryParam = new HashMap<>();
+                queryParam.put("access_token", "3314130824.5a3f599.a5e68fba664148579ceb2985fb652887");
+
+                TSGServiceManager.enqueRequest(this, Constants.API_PATH_PARAM_REQUEST, pathParam, queryParam, null, this);
                 break;
             case R.id.btnCancelAll:
                 TSGServiceManager.cancelAllReqeust();
@@ -174,16 +184,17 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
         }
     }
 
-
     @SuppressLint("LongLogTag")
     @Override
     public void onSuccess(String requestId, HttpResponse response) {
+        System.out.println("Success:  " + requestId);
         Toast.makeText(MainActivity.this, "Respoonse successful", Toast.LENGTH_SHORT).show();
     }
 
     @SuppressLint("LongLogTag")
     @Override
     public void onFailure(String requestId, Throwable throwable, HttpResponse errorResponse) {
+        System.out.println("requestId:  " + requestId);
         if (throwable != null) {
             Toast.makeText(MainActivity.this, "Respoonse failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
         } else {
@@ -199,6 +210,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 
     @Override
     public void onFinish(String requestId) {
+        System.out.println("Finish:  " + requestId);
         Toast.makeText(MainActivity.this, "Request finished", Toast.LENGTH_SHORT).show();
     }
 
@@ -214,12 +226,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
             uploadProgressBar.setProgress(progress);
         }
     }
+
 }
 
 /*
 // Sample code for files downloading
 
-    ================================== SEQUENTIALLY ==================================
+    ================================== SEQUENTIALLY DONWLOADING ==================================
 
         ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();
         builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
@@ -253,7 +266,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 
 
 
-    ================================== PARALLALY ==================================
+    ================================== PARALLALY DONWLOADING ==================================
 
 
         ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();

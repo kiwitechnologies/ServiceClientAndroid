@@ -10,6 +10,8 @@
 
 package httputility.tsg.com.tsgapicontroller;
 
+import android.content.Context;
+
 import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.beans.API;
@@ -27,22 +29,26 @@ class TSGHttpHelper {
     private final HashMap<String, String> header;
     private final String filePathForDownload;
     private final HashMap<String, String> path_params;
+    private final boolean executeParallely;
+    private Context mContext;
 
-    public TSGHttpHelper(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, String filePathForDownload) {
+    public TSGHttpHelper(Context context, API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, boolean executeParallely, String filePathForDownload) {
+        this.mContext = context;
         this.action = action;
         this.path_params = path_params;
         this.query_params = query_params;
         this.body_params = body_params;
         this.header = header;
+        this.executeParallely = executeParallely;
         this.filePathForDownload = filePathForDownload;
     }
 
-    public static ServiceManager createRequest(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header) {
-        return createRequest(action, path_params, query_params, body_params, header, null);
+    public static ServiceManager createRequest(Context context, API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, boolean executeParallely) {
+        return createRequest(context, action, path_params, query_params, body_params, header, executeParallely, null);
     }
 
-    public static ServiceManager createRequest(API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, String filePathForDownload) {
-        TSGHttpHelper tsgHttpHelper = new TSGHttpHelper(action, path_params, query_params, body_params, header, filePathForDownload);
+    public static ServiceManager createRequest(Context context, API action, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HashMap<String, String> header, boolean executeParallely, String filePathForDownload) {
+        TSGHttpHelper tsgHttpHelper = new TSGHttpHelper(context, action, path_params, query_params, body_params, header, executeParallely, filePathForDownload);
         return tsgHttpHelper.createRequest();
     }
 
@@ -62,19 +68,37 @@ class TSGHttpHelper {
         } else if (action.getRequest_type().equalsIgnoreCase("UPLOAD")) {
             requestBuilder = new ServiceManager.FileUploadRequestBuilder();
             ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setRequestBody(body_params);
+            if (!executeParallely) {
+                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setDownloadSequentially(mContext);
+            }
         } else if (action.getRequest_type().equalsIgnoreCase("DOWNLOAD")) {
             requestBuilder = new ServiceManager.FileDownloadRequestBuilder();
             ((ServiceManager.FileDownloadRequestBuilder) requestBuilder).setFilePath(filePathForDownload);
+            if (!executeParallely) {
+                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setDownloadSequentially(mContext);
+            }
         } else {
             throw new IllegalArgumentException("Invalid action type in api");
         }
         if (action.getParams_parameters() == 1) {
             requestBuilder.setPathParameters(path_params);
         }
-        requestBuilder.setQueryParameters(query_params);
+
+        if (TSGAPIController.BUILD_FLAVOR.getBuildFlavor(mContext) == TSGAPIController.BUILD_FLAVOR.DUMMY_SERVER) {
+            HashMap<String, String> dummyServerResponse = new HashMap<>();
+            dummyServerResponse.put(Constants.STATUS_CODE, TSGAPIController.getDummyServerResponseCode(mContext) + "");
+            requestBuilder.setQueryParameters(dummyServerResponse);
+        } else {
+            requestBuilder.setQueryParameters(query_params);
+        }
         requestBuilder.setHeaders(header);
         requestBuilder.setRequestId(action.getAction_id());
-        requestBuilder.setSubURL(action.getBase_url() + action.getAction());
+
+        if (TSGAPIController.BUILD_FLAVOR.getBuildFlavor(mContext) == TSGAPIController.BUILD_FLAVOR.DUMMY_SERVER) {
+            requestBuilder.setSubURL(action.getBase_url());
+        } else {
+            requestBuilder.setSubURL(action.getBase_url() + action.getAction());
+        }
 
         return requestBuilder.build();
     }

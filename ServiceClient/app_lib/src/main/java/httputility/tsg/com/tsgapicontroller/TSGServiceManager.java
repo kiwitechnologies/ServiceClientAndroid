@@ -10,6 +10,7 @@
 
 package httputility.tsg.com.tsgapicontroller;
 
+import android.app.Service;
 import android.content.Context;
 import android.database.Cursor;
 
@@ -115,7 +116,7 @@ public final class TSGServiceManager {
         API action = API.getFromDB(context, actionId);
         if (action != null) {
             if (TSGValidatorManager.validate(action, path_params, query_params, headers, body_params)) {
-                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(context, action, path_params, query_params, body_params, getHeaders(), true);
                 serviceManager.doRequest();
             }
         } else {
@@ -182,7 +183,7 @@ public final class TSGServiceManager {
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
         } else {
             if (TSGValidatorManager.validate(action, path_params, query_params, body_params, getHeaders())) {
-                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(context, action, path_params, query_params, body_params, getHeaders(), true);
                 serviceManager.enqueRequest(requestCallBack);
             } else {
                 respondFailure(requestCallBack, actionId, new IllegalArgumentException(TSGServiceManager.ERROR_LOGGER.getLog()));
@@ -226,7 +227,7 @@ public final class TSGServiceManager {
      * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
      */
     public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> query_params, RequestBodyParams body_params, HttpConstants.IMAGE_QUALITY image_quality, ServiceManager.RequestCallBackWithProgress requestCallBack) {
-        enqueMultipartFileUploadRequest(context, actionId, null, query_params, body_params, image_quality, requestCallBack);
+        enqueMultipartFileUploadRequest(context, actionId, null, query_params, body_params, image_quality, true, requestCallBack);
     }
 
     /**
@@ -240,7 +241,7 @@ public final class TSGServiceManager {
      * @param image_quality   instance of {@link HttpConstants.IMAGE_QUALITY} incase of image. It will help to compress the image based on you input quality in this
      * @param requestCallBack callback instance of {@link ServiceManager.RequestCallBackWithProgress}
      */
-    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HttpConstants.IMAGE_QUALITY image_quality, ServiceManager.RequestCallBackWithProgress requestCallBack) {
+    public static void enqueMultipartFileUploadRequest(Context context, String actionId, HashMap<String, String> path_params, HashMap<String, String> query_params, RequestBodyParams body_params, HttpConstants.IMAGE_QUALITY image_quality, boolean executeParallely, ServiceManager.RequestCallBackWithProgress requestCallBack) {
         if (build_flavor == null) {
             build_flavor = TSGAPIController.BUILD_FLAVOR.getBuildFlavor(context);
         }
@@ -264,7 +265,7 @@ public final class TSGServiceManager {
         } else {
             if (TSGValidatorManager.validate(action, path_params, query_params, body_params, getHeaders())) {
                 action.setRequest_type("UPLOAD");
-                ServiceManager serviceManager = TSGHttpHelper.createRequest(action, path_params, query_params, body_params, getHeaders());
+                ServiceManager serviceManager = TSGHttpHelper.createRequest(context, action, path_params, query_params, body_params, getHeaders(), executeParallely);
                 HashSet<String> multipartKeyNamesSet = new HashSet<String>();
                 for (int i = 0; i < action.getMultipartFileBody_parameters().length; i++) {
                     multipartKeyNamesSet.add(action.getMultipartFileBody_parameters()[i].getKey_name());
@@ -372,6 +373,10 @@ public final class TSGServiceManager {
 
             }
         });
+    }
+
+    public static void setEnableDebugging(boolean enableDebugging) {
+        ServiceManager.setEnableDebugging(enableDebugging);
     }
 
     private static void respondFailure(ServiceManager.RequestCallBack requestCallBack, String requestId, IllegalArgumentException e) {

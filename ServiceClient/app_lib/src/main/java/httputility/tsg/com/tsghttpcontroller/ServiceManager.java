@@ -15,6 +15,8 @@ import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
+import android.util.Patterns;
+import android.webkit.URLUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import okhttp3.Response;
 
 public final class ServiceManager {
 
+    private static boolean ENABLE_DEBUGGING = false;
     private static String BASE_URL;
     private static HttpRequestExecutor httpRequestExecutor = new HttpRequestExecutor();
     private final HashMap<String, String> path_parameter;
@@ -59,7 +62,7 @@ public final class ServiceManager {
         }
     }
 
-    public static void init(String baseURL) {
+    public static void setBaseUrl(String baseURL) {
         BASE_URL = baseURL;
     }
 
@@ -120,7 +123,7 @@ public final class ServiceManager {
     }
 
     public String getRequestedURL() {
-        if (subURL.toLowerCase().startsWith("http")) {
+        if (URLUtil.isNetworkUrl(subURL)) {
             return subURL;
         } else {
             if (BASE_URL != null) {
@@ -186,6 +189,14 @@ public final class ServiceManager {
 
     public boolean isExecuteOnPriority() {
         return executeOnPriority;
+    }
+
+    public static void setEnableDebugging(boolean enableDebugging) {
+        ENABLE_DEBUGGING = enableDebugging;
+    }
+
+    static boolean isDebuggingEnable() {
+        return ENABLE_DEBUGGING;
     }
 
     boolean isDonwloadFileRequest() {

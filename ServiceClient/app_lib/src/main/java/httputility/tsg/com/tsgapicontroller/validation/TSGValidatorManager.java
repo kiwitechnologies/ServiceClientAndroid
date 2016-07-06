@@ -31,7 +31,7 @@ public class TSGValidatorManager {
         TSGValidatorManager handler = new TSGValidatorManager();
 
         if (action.getParams_parameters() == 1) {
-            handler.validData = handler.checkURLPathParams(action.getBase_url()+action.getAction(), path_parameter);
+            handler.validData = handler.checkURLPathParams(action.getBase_url() + action.getAction(), path_parameter);
         }
         handler.validData = handler.checkAllQueryParameters(action, query_parameter) && handler.validData;
         handler.validData = handler.checkHeaders(action, headers) && handler.validData;
@@ -49,7 +49,7 @@ public class TSGValidatorManager {
         ArrayList<String> pathParamsList = Utility.getPathParamsInURL(url);
 
         for (int i = 0; i < pathParamsList.size(); i++) {
-            if (path_parameter==null || !path_parameter.containsKey(pathParamsList.get(i))) {
+            if (path_parameter == null || !path_parameter.containsKey(pathParamsList.get(i))) {
                 result = false;
                 TSGServiceManager.ERROR_LOGGER.getErr_urlPathParameters().addErrMissed(pathParamsList.get(i), Error.ERR_URL_PATH_PARAMETER_NOT_FOUND);
             }
@@ -90,8 +90,9 @@ public class TSGValidatorManager {
 
             String keyName = queryParameter.getKey_name();
 
-            //Check for all required key_name available
-            if (queryParameter.getValidations().getRequire() == 1) {
+            if (queryParameter.getValidations().getRequire() == 0 && !queryParamsKeyValue.containsKey(keyName)) {
+                return true;
+            } else if (queryParameter.getValidations().getRequire() == 1) {
                 if (queryParamsKeyValue == null || !queryParamsKeyValue.containsKey(keyName)) {
                     TSGServiceManager.ERROR_LOGGER.getErr_queryParameters().addErrMissed(keyName, Error.ERR_KEYNAME_NOT_FOUND);
                     validData = false;

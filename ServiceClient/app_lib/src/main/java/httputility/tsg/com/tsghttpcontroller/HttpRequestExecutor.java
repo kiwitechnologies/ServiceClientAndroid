@@ -10,8 +10,10 @@
 
 package httputility.tsg.com.tsghttpcontroller;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public final class HttpRequestExecutor {
 
     public Response execute(ServiceManager serviceManager) throws IOException {
         Request request = HttpRequestFactory.getRequest(serviceManager, null);
+        logRequest(request, serviceManager);
         Response response = httpClient.newCall(request).execute();
         if (!response.isSuccessful()) {
             throw new IOException("Unexpected code " + response);
@@ -56,6 +59,7 @@ public final class HttpRequestExecutor {
 
         try {
             request = HttpRequestFactory.getRequest(serviceManager, requestCallBack);
+            logRequest(request, serviceManager);
         } catch (Exception e) {
             requestCallBack.onFailure(serviceManager.getRequestId(), e, null);
             requestCallBack.onFinish(serviceManager.getRequestId());
@@ -70,12 +74,22 @@ public final class HttpRequestExecutor {
         call.enqueue(httpRequestCallBack);
     }
 
+    private void logRequest(Request request, ServiceManager serviceManager) {
+        try {
+            if (ServiceManager.isDebuggingEnable()) {
+                Log.d(HttpConstants.KEY_TSG_SERVICE_CLIENT_REQUEST, String.valueOf(request) + "  header:" + request.headers() + "  body:" + serviceManager.getBody_params() + "  tag:" + serviceManager.getRequestId());
+            }
+        } catch (Exception e) {
+            System.out.print("exception in logging");
+        }
+    }
 
     public void enqueSequentialRequest(ServiceManager serviceManager, ServiceManager.RequestCallBack requestCallBack) {
         Request request = null;
 
         try {
             request = HttpRequestFactory.getRequest(serviceManager, requestCallBack);
+            logRequest(request, serviceManager);
         } catch (Exception e) {
             requestCallBack.onFailure(serviceManager.getRequestId(), e, null);
             requestCallBack.onFinish(serviceManager.getRequestId());

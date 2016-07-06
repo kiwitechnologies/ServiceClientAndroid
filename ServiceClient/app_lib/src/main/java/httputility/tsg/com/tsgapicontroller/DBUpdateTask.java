@@ -59,7 +59,7 @@ public final class DBUpdateTask extends AsyncTask<String, Void, Void> {
     }
 
     private boolean updateDB(Context context, long updated_at) {
-        if (buildFlavor == TSGAPIController.BUILD_FLAVOR.STAGING) {
+        if (buildFlavor == TSGAPIController.BUILD_FLAVOR.PRODUCTION) {
             SharedPreferences prefs = context.getSharedPreferences(TSGAPIController.SharedPrefConstants.SHARED_PREF_FILE_NAME, Context.MODE_PRIVATE);
             long prevUpdateAtVal = prefs.getLong(TSGAPIController.SharedPrefConstants.KEY_UPDATEDAT, -1);
             if (prevUpdateAtVal == -1 || isProjectVersionChanged(context)) {
