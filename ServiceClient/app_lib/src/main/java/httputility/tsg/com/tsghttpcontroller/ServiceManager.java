@@ -15,7 +15,6 @@ import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
-import android.util.Patterns;
 import android.webkit.URLUtil;
 
 import java.io.File;
@@ -46,6 +45,7 @@ public final class ServiceManager {
     private HttpConstants.IMAGE_QUALITY image_quality;
     private long requestTime;
     private boolean executeOnPriority = false;
+    private HttpConstants.HTTPRequestType fileUploadRequestType;
 
     private ServiceManager(@NonNull HttpConstants.HTTPRequestType httpRequestType, String requestId, @NonNull String subURL, HashMap<String, String> path_parameter, HashMap<String, String> headers, HashMap<String, String> query_params, RequestBodyParams body_params, boolean executeSequentially) {
         this.HTTPRequestType = httpRequestType;
@@ -203,6 +203,14 @@ public final class ServiceManager {
         return (downloadFilePath != null && !downloadFilePath.equals(""));
     }
 
+    private void setFileUploadRequestType(HttpConstants.HTTPRequestType fileUploadRequestType) {
+        this.fileUploadRequestType = fileUploadRequestType;
+    }
+
+    HttpConstants.HTTPRequestType getFileUploadRequestType() {
+        return fileUploadRequestType;
+    }
+
     /**
      * RequestCallBack It listen you back the response
      */
@@ -255,18 +263,18 @@ public final class ServiceManager {
     }
 
     static abstract class SequentialRequestBuilder extends RequestBuilder {
-        boolean downloadSequentially;
+        boolean sequential;
         Context context;
         boolean executeOnPriority = false;
 
 
-        public void setDownloadSequentially(Context context) {
+        public void setSequential(Context context) {
             this.context = context;
-            downloadSequentially = true;
+            sequential = true;
         }
 
         public void setDownloadParallaly() {
-            downloadSequentially = false;
+            sequential = false;
         }
 
         public void setExecuteOnPriority() {
@@ -324,14 +332,23 @@ public final class ServiceManager {
     public static class FileUploadRequestBuilder extends SequentialRequestBuilder {
 
         private RequestBodyParams requestBody;
+        private HttpConstants.HTTPRequestType requestType;
+
+        public FileUploadRequestBuilder(HttpConstants.HTTPRequestType requestType) {
+            if (!(requestType == HttpConstants.HTTPRequestType.DELETE || requestType == HttpConstants.HTTPRequestType.POST || requestType == HttpConstants.HTTPRequestType.PUT)) {
+                throw new IllegalArgumentException("Invalid request type, Allowed request types are PUT, POST and DELETE");
+            }
+            this.requestType = requestType;
+        }
 
         public void setRequestBody(@Nullable RequestBodyParams requestBody) {
             this.requestBody = requestBody;
         }
 
         public ServiceManager build() {
-            ServiceManager serviceManager = new ServiceManager(HttpConstants.HTTPRequestType.UPLOAD_FILE, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, downloadSequentially);
-            if (downloadSequentially) {
+            ServiceManager serviceManager = new ServiceManager(HttpConstants.HTTPRequestType.UPLOAD_FILE, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, sequential);
+            serviceManager.setFileUploadRequestType(requestType);
+            if (sequential) {
                 serviceManager.setContext(context, executeOnPriority);
             }
 
@@ -369,9 +386,9 @@ public final class ServiceManager {
 
         @Override
         public ServiceManager build() {
-            ServiceManager serviceManager = new ServiceManager(requestType, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, downloadSequentially);
+            ServiceManager serviceManager = new ServiceManager(requestType, getRequestId(), subURL, pathParameters, headers, queryParameters, requestBody, sequential);
             serviceManager.setDownloadFilePath(filePath);
-            if (downloadSequentially) {
+            if (sequential) {
                 serviceManager.setContext(context, executeOnPriority);
             }
             return serviceManager;

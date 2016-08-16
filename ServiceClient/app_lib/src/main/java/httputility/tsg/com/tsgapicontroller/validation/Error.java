@@ -18,4 +18,6 @@ public class Error {
     public static final String ERR_INVALID_FILE_FORMAT = "File “%s” format is not valid. It should be one of “%s”.";
     public static final String ERR_KEYNAME_WRONG_SIZE = "“%s”  size is not correct. It should be less than “%s”";
 
+    public static final String ERR_NO_INTERNET_CONNECTION = "No internet connection.";
+
 }

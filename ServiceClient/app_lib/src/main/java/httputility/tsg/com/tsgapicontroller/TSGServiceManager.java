@@ -32,6 +32,7 @@ import httputility.tsg.com.tsghttpcontroller.HttpRequestExecutor;
 import httputility.tsg.com.tsghttpcontroller.HttpResponse;
 import httputility.tsg.com.tsghttpcontroller.ServiceManager;
 import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
+import httputility.tsg.com.tsghttpcontroller.Utility;
 
 /**
  * Created by Ashish Rajvanshi on 04/05/16.
@@ -113,9 +114,12 @@ public final class TSGServiceManager {
             return;
         }
 
+        if (!Utility.isNetworkAvailable(context)) {
+            throw new IOException(Error.ERR_NO_INTERNET_CONNECTION);
+        }
         API action = API.getFromDB(context, actionId);
         if (action != null) {
-            if (TSGValidatorManager.validate(action, path_params, query_params, headers, body_params)) {
+            if (TSGValidatorManager.validate(action, path_params, query_params, body_params, getHeaders())) {
                 ServiceManager serviceManager = TSGHttpHelper.createRequest(context, action, path_params, query_params, body_params, getHeaders(), true);
                 serviceManager.doRequest();
             }
@@ -175,6 +179,12 @@ public final class TSGServiceManager {
         if (!TSGServiceManager.isDBInitialised(context)) {
             ERROR_LOGGER.getErr_mix().add(Error.ERR_DB_NOT_INITIALISED);
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
+            return;
+        }
+
+        if (!Utility.isNetworkAvailable(context)) {
+            requestCallBack.onFailure(actionId, new IOException(Error.ERR_NO_INTERNET_CONNECTION), null);
+            requestCallBack.onFinish(actionId);
             return;
         }
         API action = API.getFromDB(context, actionId);
@@ -256,6 +266,12 @@ public final class TSGServiceManager {
         if (!TSGServiceManager.isDBInitialised(context)) {
             ERROR_LOGGER.getErr_mix().add(Error.ERR_DB_NOT_INITIALISED);
             respondFailure(requestCallBack, actionId, new IllegalArgumentException(ERROR_LOGGER.getLog()));
+            return;
+        }
+
+        if (!Utility.isNetworkAvailable(context)) {
+            requestCallBack.onFailure(actionId, new IOException(Error.ERR_NO_INTERNET_CONNECTION), null);
+            requestCallBack.onFinish(actionId);
             return;
         }
         API action = API.getFromDB(context, actionId);

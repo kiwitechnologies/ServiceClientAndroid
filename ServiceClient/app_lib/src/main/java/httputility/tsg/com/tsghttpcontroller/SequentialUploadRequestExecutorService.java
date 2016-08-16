@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import httputility.tsg.com.tsgapicontroller.Constants;
 import okhttp3.Call;
-import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
 /**
@@ -18,7 +17,6 @@ import okhttp3.Response;
  */
 
 public class SequentialUploadRequestExecutorService extends IntentService {
-    private OkHttpClient httpClient;
 
     private static ArrayList<Bundle> bundlesList = new ArrayList<>();
 
@@ -32,14 +30,6 @@ public class SequentialUploadRequestExecutorService extends IntentService {
 
     public SequentialUploadRequestExecutorService() {
         super(SequentialUploadRequestExecutorService.class.getName());
-
-        if (httpClient == null) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.connectTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            builder.writeTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            builder.readTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            httpClient = builder.build();
-        }
     }
 
     @Override

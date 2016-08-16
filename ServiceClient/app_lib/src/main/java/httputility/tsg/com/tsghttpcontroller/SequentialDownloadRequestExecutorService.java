@@ -20,7 +20,6 @@ import okhttp3.Response;
  */
 
 public class SequentialDownloadRequestExecutorService extends IntentService {
-    private OkHttpClient httpClient;
 
     private volatile static Vector<Bundle> bundlesList = new Vector<>();
 
@@ -41,14 +40,6 @@ public class SequentialDownloadRequestExecutorService extends IntentService {
 
     public SequentialDownloadRequestExecutorService() {
         super(SequentialDownloadRequestExecutorService.class.getName());
-
-        if (httpClient == null) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.connectTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            builder.writeTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            builder.readTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-            httpClient = builder.build();
-        }
     }
 
     @Override

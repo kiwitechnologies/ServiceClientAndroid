@@ -15,6 +15,7 @@ import android.content.Context;
 import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.beans.API;
+import httputility.tsg.com.tsghttpcontroller.HttpConstants;
 import httputility.tsg.com.tsghttpcontroller.ServiceManager;
 import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
 
@@ -66,16 +67,16 @@ class TSGHttpHelper {
             requestBuilder = new ServiceManager.DeleteRequestBuilder();
             ((ServiceManager.DeleteRequestBuilder) requestBuilder).setRequestBody(body_params);
         } else if (action.getRequest_type().equalsIgnoreCase("UPLOAD")) {
-            requestBuilder = new ServiceManager.FileUploadRequestBuilder();
+            requestBuilder = new ServiceManager.FileUploadRequestBuilder(HttpConstants.HTTPRequestType.POST);
             ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setRequestBody(body_params);
             if (!executeParallely) {
-                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setDownloadSequentially(mContext);
+                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setSequential(mContext);
             }
         } else if (action.getRequest_type().equalsIgnoreCase("DOWNLOAD")) {
             requestBuilder = new ServiceManager.FileDownloadRequestBuilder();
             ((ServiceManager.FileDownloadRequestBuilder) requestBuilder).setFilePath(filePathForDownload);
             if (!executeParallely) {
-                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setDownloadSequentially(mContext);
+                ((ServiceManager.FileUploadRequestBuilder) requestBuilder).setSequential(mContext);
             }
         } else {
             throw new IllegalArgumentException("Invalid action type in api");

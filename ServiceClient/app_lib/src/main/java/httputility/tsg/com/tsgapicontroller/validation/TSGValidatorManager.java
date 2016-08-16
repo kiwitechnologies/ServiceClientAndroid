@@ -27,7 +27,7 @@ public class TSGValidatorManager {
     }
 
     @SuppressLint("LongLogTag")
-    public static boolean validate(API action, HashMap<String, String> path_parameter, HashMap<String, String> query_parameter, HashMap<String, String> body_params, HashMap<String, String> headers) {
+    public static boolean validate(API action, HashMap<String, String> path_parameter, HashMap<String, String> query_parameter, HashMap<String, Object> body_params, HashMap<String, String> headers) {
         TSGValidatorManager handler = new TSGValidatorManager();
 
         if (action.getParams_parameters() == 1) {
@@ -115,7 +115,7 @@ public class TSGValidatorManager {
     }
 
 
-    private boolean checkAllBodyParameters(API action, HashMap<String, String> bodyParamsKeyValue) {
+    private boolean checkAllBodyParameters(API action, HashMap<String, Object> bodyParamsKeyValue) {
         boolean validData = true;
         BodyParameter bodyParamtersFormat[] = action.getAllBody_parameters();
         if (bodyParamtersFormat == null || bodyParamtersFormat.length == 0) {
@@ -140,10 +140,10 @@ public class TSGValidatorManager {
 
             //Check for valid data type in body
             int dataTypeIndex = bodyParameterFormat.getValidation_data_type();
-            validData = TSGValidationHelper.isValidDataType(true, keyName, dataTypeIndex, bodyParamsKeyValue.get(keyName)) && validData;
+            validData = TSGValidationHelper.isValidDataType(true, keyName, dataTypeIndex, (String) bodyParamsKeyValue.get(keyName)) && validData;
 
             //Check for valid length of value
-            validData = TSGValidationHelper.checkForRange(keyName, bodyParameterFormat, bodyParamsKeyValue.get(keyName)) && validData;
+            validData = TSGValidationHelper.checkForRange(keyName, bodyParameterFormat, (String) bodyParamsKeyValue.get(keyName)) && validData;
 
 
             //Check for valid string format
@@ -151,7 +151,7 @@ public class TSGValidatorManager {
 
             //Check for multipart file size
             if (bodyParameterFormat.isMultipartFileRequest()) {
-                String filePath = bodyParamsKeyValue.get(bodyParameterFormat.getKey_name());
+                String filePath = (String) bodyParamsKeyValue.get(bodyParameterFormat.getKey_name());
                 File file = new File(filePath);
                 if (!file.exists()) {
                     TSGServiceManager.ERROR_LOGGER.getErr_bodyParameters().addErrMissed(keyName, String.format(Error.ERR_FILE_NOT_FOUND, file.getName()));

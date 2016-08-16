@@ -13,8 +13,10 @@ package httputility.tsg.com.tsghttpcontroller;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import httputility.tsg.com.tsgapicontroller.Constants;
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -32,22 +35,12 @@ import okhttp3.Response;
  */
 public final class HttpRequestExecutor {
 
-    private static OkHttpClient httpClient;
-
-    static {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.connectTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-        builder.writeTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-        builder.readTimeout(Constants.CONNECTION_TIME_OUT_SEC, TimeUnit.SECONDS);
-        httpClient = builder.build();
-    }
-
     static volatile ConcurrentHashMap<String, ArrayList<CallWrapper>> requestInfo = new ConcurrentHashMap<>();
 
     public Response execute(ServiceManager serviceManager) throws IOException {
         Request request = HttpRequestFactory.getRequest(serviceManager, null);
         logRequest(request, serviceManager);
-        Response response = httpClient.newCall(request).execute();
+        Response response = HttpClientConfiguration.getInstance().getOkHttpClient().newCall(request).execute();
         if (!response.isSuccessful()) {
             throw new IOException("Unexpected code " + response);
         }
@@ -67,7 +60,7 @@ public final class HttpRequestExecutor {
         }
 
         HttpRequestCallBack httpRequestCallBack = new HttpRequestCallBack(serviceManager, requestCallBack);
-        Call call = httpClient.newCall(request);
+        Call call = HttpClientConfiguration.getInstance().getOkHttpClient().newCall(request);
         if (serviceManager.getRequestId() != null && !serviceManager.getRequestId().equals("")) {
             addCallInMap(serviceManager.getRequestId(), new CallWrapper(serviceManager.getRequestTime(), call));
         }
@@ -97,7 +90,7 @@ public final class HttpRequestExecutor {
         }
 
         HttpRequestCallBack httpRequestCallBack = new HttpRequestCallBack(serviceManager, requestCallBack);
-        Call call = httpClient.newCall(request);
+        Call call = HttpClientConfiguration.getInstance().getOkHttpClient().newCall(request);
         addCallInMap(serviceManager.getRequestId(), new CallWrapper(serviceManager.getRequestTime(), call));
 
 

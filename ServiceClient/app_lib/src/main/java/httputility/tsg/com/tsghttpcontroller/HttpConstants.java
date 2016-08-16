@@ -21,7 +21,7 @@ public class HttpConstants {
     public final static String KEY_TSG_SERVICE_CLIENT_REQUEST = "TSGServiceClient Request";
     public final static String KEY_TSG_SERVICE_CLIENT_RESPONSE = "TSGServiceClient Response";
 
-    enum HTTPRequestType {
+    public enum HTTPRequestType {
         GET,
         POST,
         PUT,

@@ -19,6 +19,7 @@ import android.widget.Toast;
 import java.util.HashMap;
 
 import httputility.tsg.com.tsgapicontroller.*;
+import httputility.tsg.com.tsghttpcontroller.HttpClientConfiguration;
 import httputility.tsg.com.tsghttpcontroller.HttpConstants;
 import httputility.tsg.com.tsghttpcontroller.HttpResponse;
 import httputility.tsg.com.tsghttpcontroller.RequestBodyParams;
@@ -106,7 +107,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
         switch (view.getId()) {
             case R.id.btnInitDb:
                 TSGAPIController.init(getApplicationContext(), TSGAPIController.BUILD_FLAVOR.DUMMY_SERVER);
-                TSGAPIController.setDummyServerResponseCode(this,300);
+                TSGAPIController.setDummyServerResponseCode(this, 300);
                 btnInitDB.setVisibility(View.GONE);
                 optionsLayout.setVisibility(View.VISIBLE);
                 break;
@@ -125,6 +126,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
                 startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
                 break;
             case R.id.btnDownloadImg:
+                HttpClientConfiguration.getInstance().setCache(Environment.getExternalStorageDirectory().getPath(), 1024 * 1024 * 10);
                 ServiceManager.FileDownloadRequestBuilder builder = new ServiceManager.FileDownloadRequestBuilder();
                 builder.setFilePath(Environment.getExternalStorageDirectory() + "/Download", "ash1.pdf");
                 builder.setSubURL("http://kmmc.in/wp-content/uploads/2014/01/lesson2.pdf");
