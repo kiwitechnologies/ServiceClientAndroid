@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/ServiceClient.iml" filepath="$PROJECT_DIR$/ServiceClient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app_lib/app_lib.iml" filepath="$PROJECT_DIR$/app_lib/app_lib.iml" />
+    </modules>
+  </component>
+</project>

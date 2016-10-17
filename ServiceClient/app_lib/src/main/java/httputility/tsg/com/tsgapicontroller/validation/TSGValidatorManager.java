@@ -131,7 +131,9 @@ public class TSGValidatorManager {
             String keyName = bodyParameterFormat.getKey_name();
 
             //Check for all required key_name available
-            if (bodyParameterFormat.getValidations().getRequire() == 1) {
+            if (bodyParameterFormat.getValidations().getRequire() == 0 && !bodyParamsKeyValue.containsKey(keyName)) {
+                return true;
+            } else if (bodyParameterFormat.getValidations().getRequire() == 1) {
                 if (bodyParamsKeyValue == null || !bodyParamsKeyValue.containsKey(keyName)) {
                     TSGServiceManager.ERROR_LOGGER.getErr_bodyParameters().addErrMissed(keyName, Error.ERR_KEYNAME_NOT_FOUND);
                     validData = false;
